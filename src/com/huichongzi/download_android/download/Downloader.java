@@ -8,26 +8,22 @@ import android.content.Context;
 import android.util.Log;
 
 
+/**
+ * 下载主类
+ * Created by cuihz on 2014/7/3.
+ */
 public class Downloader {
-
     private static Context mContext = null;
     private DownloaderListener downloadListener = null;
-
     // 最大允许启动下载的个数
     private static final int Max_Allow_Download = 3;
-
     // 当前下载的存储表
     protected static Hashtable<String, DownloadTask> Download_Map = new Hashtable<String, DownloadTask>();
-
-
     private DownloadInfo downloadInfo;
-
-    private static DownloadTaskCheckThread downloadTaskCheck = new DownloadTaskCheckThread();
-    private static boolean checkTaskIsOn = false;
     //下载中断是否重连
     private static boolean isReconnect = false;
-
-    private DownloadTask downloadTask;
+    private static DownloadTaskCheckThread downloadTaskCheck = new DownloadTaskCheckThread();
+    private static boolean checkTaskIsOn = false;
 
 
     private Downloader(Context context, DownloadInfo di, DownloaderListener listener) {
@@ -37,61 +33,57 @@ public class Downloader {
     }
 
 
+    /**
+     * 检查存储情况。通过不同的回调处理相应的事件。
+     * 1、有异常或错误
+     * 2、未下载或未下载完开启下载线程
+     */
     private void tryStorage() {
         // 新建存储线程（存储可能需要3-5s，所以以线程方式）
-        StorageHandlerTask sh = new StorageHandlerTask(mContext, downloadInfo, new StorageListener() {
-
+        StorageHandleTask sh = new StorageHandleTask(mContext, downloadInfo, new StorageListener() {
             public void onAlreadyDownload(String path) {
                 Log.d("onAlreadyDownload", downloadInfo.getName() + " already exists in "
                         + path);
                 if (downloadListener != null) {
-                    downloadListener.onDownloaded();
+                    downloadListener.onDownloadRepeat(downloadInfo.getName() + "文件已经下载过");
                 }
             }
-
             public void onDownloadNotFinished(String path) {
                 Log.e("onDownloadNotFinished", downloadInfo.getName()
                         + " is download but not finished in " + path);
                 download(false);
             }
-
             public void onNotDownload(String path) {
                 Log.e("onNotDownload", downloadInfo.getName()
                         + " is  not download,it will download in "
                         + path);
                 download(true);
             }
-
             public void onStorageNotEnough(long softSize, long avilableSize) {
                 Log.e("onStorageNotEnough", downloadInfo.getName()
                         + "not enough size sdsize=" + avilableSize);
                 String msg = "空间不足";
                 if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadConfig.Storage_Not_Enough, msg);
+                    downloadListener.onCreateFailed(msg);
                 }
             }
-
-
             public void onStorageNotMount(String path) {
                 Log.e("onStorageNotMount", downloadInfo.getName() + "rom can't chmod");
                 String msg = "sd卡不存在";
                 if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadConfig.Storage_Cannot_Chmod, msg);
+                    downloadListener.onCreateFailed(msg);
                 }
-
             }
-
             public void onDownloadPathConnectError(String msg) {
                 Log.e("onDownloadPathConnectError", downloadInfo.getName() + "无法连接到下载地址" + downloadInfo.getUrl());
                 if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadConfig.Url_Connect_Error, downloadInfo.getName() + msg);
+                    downloadListener.onConnectFailed(downloadInfo.getName() + msg);
                 }
             }
-
             public void onFileSizeError() {
                 Log.e("onDownloadPathConnectError", downloadInfo.getName() + "文件大小与服务器不符" + downloadInfo.getUrl());
                 if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadConfig.Is_Size_Error, downloadInfo.getName() + "文件大小与服务器不符");
+                    downloadListener.onCheckFailed(downloadInfo.getName() + "文件大小与服务器不符");
                 }
             }
         });
@@ -99,15 +91,22 @@ public class Downloader {
     }
 
 
+    /**
+     * 开启下载线程
+     * @param isNew 是否为新的下载
+     */
     private void download(boolean isNew) {
         // 启动文件下载线程
-        downloadTask = new DownloadTask(mContext, downloadInfo, downloadListener, isNew);
+        DownloadTask downloadTask = new DownloadTask(mContext, downloadInfo, downloadListener, isNew);
         downloadTask.start();
         Download_Map.put(downloadInfo.getId(), downloadTask);
-
     }
 
 
+    /**
+     * 暂停下载
+     * @param id 下载唯一id
+     */
     public static void pauseDownload(String id) {
         if(Download_Map.containsKey(id)){
             DownloadTask task = Download_Map.get(id);
@@ -122,9 +121,15 @@ public class Downloader {
     }
 
 
-    public static void resumeDownload(String id) {
+    /**
+     * 恢复下载
+     * @param id 下载唯一id
+     * @throws DownloadOverFlowException 超过最大下载数异常
+     * @throws DownloadNotExistException 下载任务不存在
+     */
+    public static void resumeDownload(String id) throws DownloadOverFlowException, DownloadNotExistException {
         if(getDowningSize() >= Max_Allow_Download){
-
+            throw new DownloadOverFlowException();
         }
         if(Download_Map.containsKey(id)){
             DownloadTask task = Download_Map.get(id);
@@ -136,11 +141,16 @@ public class Downloader {
                 Download_Map.remove(id);
             }
         }
-
+        throw new DownloadNotExistException();
     }
 
 
-    public static boolean isDownloadPause(String id) throws Exception {
+    /**
+     * 下载是否暂停
+     * @param id
+     * @return
+     */
+    public static boolean isDownloadPause(String id){
         if(Download_Map.containsKey(id)){
             DownloadTask task = Download_Map.get(id);
             if(task != null && !task.isStop()){
@@ -150,11 +160,14 @@ public class Downloader {
                 Download_Map.remove(id);
             }
         }
-            throw new Exception();
+        return true;
     }
 
 
-
+    /**
+     * 取消下载
+     * @param id
+     */
     public static void cancelDownload(String id){
         if(Download_Map.containsKey(id)){
             DownloadTask task = Download_Map.get(id);
@@ -167,33 +180,29 @@ public class Downloader {
 
 
     /**
-     * 添加下载事件
+     * 添加下载任务
      * @param context
      * @param di 下载信息
-     * @param listener 下载监听回调
+     * @param listener 下载事件回调
+     * @throws DownloadRepeatException 重复下载异常
+     * @throws DownloadOverFlowException 下载数超出异常
      */
-    public static void downloadEvent(Context context, DownloadInfo di, DownloaderListener listener) {
-        //检查是否已下载
+    public static void downloadEvent(Context context, DownloadInfo di, DownloaderListener listener) throws DownloadRepeatException, DownloadOverFlowException {
+        //检查是否已下载完成
         File file = new File(di.getPath());
         if (file.exists() && file.isFile()) {
-
-            return;
+            throw new DownloadRepeatException("已经下载过了");
         } else {
             file.getParentFile().mkdirs();
         }
-
-
         //未下载则下载
         if (Download_Map.containsKey(di.getId())) {
-            listener.onProFailed(DownloadConfig.Is_Download_Repeat, "当前文件已在下载");
             Log.d("download", di.getName() + " is downloading");
-            return;
+            throw new DownloadRepeatException("正在下载");
         }
         if (getDowningSize() >= Max_Allow_Download) {
-            listener.onProFailed(DownloadConfig.Is_Download_OverFlow, "最大下载数为"
-                    + Max_Allow_Download + "个");
             Log.d("download", "max download is " + Max_Allow_Download);
-            return;
+            throw new DownloadOverFlowException();
         }
         Downloader downloader = new Downloader(context, di, listener);
         // 下载存储应用

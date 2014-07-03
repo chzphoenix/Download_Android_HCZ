@@ -1,30 +1,29 @@
 package com.huichongzi.download_android.download;
 
+/**
+ * 下载事件监听接口
+ * Created by cuihz on 2014/7/3.
+ */
 public interface DownloaderListener {
-	/**
-	 * 下载成功
-	 */
-	 public void onDownloadSuccess(String md5);
+
+    /**
+     * 重复下载
+     */
+    public void onDownloadRepeat(String msg);
 
 
     /**
-     * 准备下载失败，包括sd卡不存在，空间不足等
-     * @param errCode
+     * 连接失败
      * @param msg
      */
-    public void onProFailed(int errCode, String msg);
-	
-	 /**
-	 * 下载失败
-	 */
-	public void onDownloadFailed();
+    public void onConnectFailed(String msg);
 
     /**
-     * 下载完成后校验失败，包括md5、文件大小等
-     * @param errCode
+     * 创建文件失败，包括sd卡不存在，空间不足等
      * @param msg
      */
-    public void onCheckFailed(int errCode, String msg);
+    public void onCreateFailed(String msg);
+
 
 	/**
 	 * 开始下载时调用
@@ -39,9 +38,22 @@ public interface DownloaderListener {
     public void onDownloadProgressChanged(int currentProgress);
 
     /**
-     * 文件已经下载过
+     * 下载失败
      */
-    public void onDownloaded();
-	
+    public void onDownloadFailed();
+
+
+    /**
+     * 校验失败，包括md5、文件大小等
+     * @param msg
+     */
+    public void onCheckFailed(String msg);
+
+    /**
+     * 下载成功
+     */
+    public void onDownloadSuccess(String md5);
+
+
 
 }

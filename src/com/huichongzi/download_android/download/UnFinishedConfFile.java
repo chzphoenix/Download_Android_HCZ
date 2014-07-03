@@ -4,14 +4,25 @@ import java.io.*;
 import java.nio.channels.FileLock;
 import java.util.*;
 
-
+/**
+ * 未完成下载的配置文件类
+ * Created by cuihz on 2014/7/3.
+ */
 class UnFinishedConfFile {
 	
 	private Map<String, String> conf = new HashMap<String, String>();
 	private File file;
-	private final static String SPLIT = "/ifeng/";
+    //配置文件的分隔符
+	private final static String SPLIT = "=";
+    //配置文件的扩展名
     protected static final String Unfinished_Conf_Sign = ".dz";
 
+    /**
+     * 根据路径初始化配置
+     * 1、文件存在，读取配置到map中
+     * 2、文件不存在，创建文件
+     * @param path 下载文件的路径
+     */
     protected UnFinishedConfFile(String path){
 		try {
 			file = new File(path + Unfinished_Conf_Sign);
@@ -30,6 +41,11 @@ class UnFinishedConfFile {
 		}
 	}
 
+
+    /**
+     * 判断文件是否被使用
+     * @return
+     */
     protected boolean isLock(){
 		try {
 			RandomAccessFile raf = new RandomAccessFile(file, "rw");
@@ -53,6 +69,10 @@ class UnFinishedConfFile {
 		conf.put(key, value);
 	}
 
+
+    /**
+     * 将配置map中的信息保存到文件中
+     */
     protected void write(){
 		StringBuffer sb = new StringBuffer();
 		for(String key : conf.keySet()){
@@ -74,6 +94,10 @@ class UnFinishedConfFile {
 		}
 	}
 
+    /**
+     * 判断配置是否存在
+     * @return
+     */
     protected boolean isConfNull(){
 		if(conf.size() == 0){
 			return true;

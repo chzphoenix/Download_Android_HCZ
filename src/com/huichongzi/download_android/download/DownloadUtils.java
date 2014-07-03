@@ -10,18 +10,22 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.Proxy;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
+ * 工具类
  * Created by cuihz on 2014/7/2.
  */
 class DownloadUtils {
 
 
-
+    /**
+     * 判断网络是否可用
+     * @param context
+     * @return
+     */
     protected static boolean isNetworkAvailable(Context context) {
         if(context != null){
             ConnectivityManager manager = (ConnectivityManager) context
@@ -41,12 +45,14 @@ class DownloadUtils {
     }
 
 
-
-
-    // 文件下载出错，删除文件及临时文件
+    /**
+     * 删除文件。包括临时文件和配置文件
+     * 用于下载出错，下载取消等
+     * @param path
+     */
     protected static void removeFile(String path) {
         File file = new File(path);
-        File tempFile = new File(path + StorageHandlerTask.Unfinished_Sign);
+        File tempFile = new File(path + StorageHandleTask.Unfinished_Sign);
         // 下载完成
         if (file.exists()) {
             file.deleteOnExit();
@@ -66,14 +72,11 @@ class DownloadUtils {
      * @throws java.io.IOException
      */
     protected static String getFileMD5(File file) throws NoSuchAlgorithmException, IOException {
-
         InputStream fis = null;
         MessageDigest md5 = null;
-
         try {
             fis = new FileInputStream(file);
             md5 = MessageDigest.getInstance("MD5");
-
             int numRead = 0;
             byte[] buffer = new byte[1024];
             while ((numRead = fis.read(buffer)) > 0) {
@@ -82,7 +85,6 @@ class DownloadUtils {
         } finally {
             if (fis != null) fis.close();
         }
-
         return md5 != null ? toHexString(md5.digest()) : "";
     }
 
@@ -93,20 +95,21 @@ class DownloadUtils {
      * @return 16进制的字符串
      */
     protected static String toHexString(byte[] b) {
-
         char[] hexChar = { '0', '1', '2', '3', '4', '5', '6', '7','8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-
         StringBuilder sb = new StringBuilder(b.length * 2);
-
         for (int i = 0; i < b.length; i++) {
             sb.append(hexChar[(b[i] & 0xf0) >>> 4]);
             sb.append(hexChar[b[i] & 0x0f]);
         }
-
         return sb.toString();
     }
 
 
+    /**
+     * 获取本路径的可用空间
+     * @param path
+     * @return
+     */
     protected static long getAvailableSize(String path){
         StatFs statfs = new StatFs(path);
         // 获取block的SIZE
@@ -117,6 +120,12 @@ class DownloadUtils {
     }
 
 
+    /**
+     * 通过url获取下载文件大小
+     * @param urlStr 下载url
+     * @return
+     * @throws Exception
+     */
     protected static long getFileSize(String urlStr) throws Exception {
         URL url = new URL(urlStr);
         HttpURLConnection conn = null;

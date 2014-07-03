@@ -2,6 +2,7 @@ package com.huichongzi.download_android.download;
 
 /**
  * 存储事件监听
+ * Created by cuihz on 2014/7/3.
  */
 interface StorageListener {
 

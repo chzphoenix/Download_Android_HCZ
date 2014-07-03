@@ -5,16 +5,29 @@ import android.content.Context;
 import android.os.Environment;
 import android.util.Log;
 
-class StorageHandlerTask extends Thread {
+/**
+ * 存储检查操作线程类
+ * 下载前检查sd卡是否存在，空间是否足够等
+ * Created by cuihz on 2014/7/3.
+ */
+class StorageHandleTask extends Thread {
+    //监听存储检查线程，用于各种事件回调
 	private StorageListener storageListener = null;
 	private Context mContext = null;
     private DownloadInfo di;
+    //临时文件的扩展名
 	protected static final String Unfinished_Sign = ".temp";
 	// sd卡最少保留空间
 	final static int miniSdSize = 2 * 1024 * 1024;
 
 
-	protected StorageHandlerTask(Context context, DownloadInfo di, StorageListener listener) {
+    /**
+     * 构造函数
+     * @param context
+     * @param di 下载信息
+     * @param listener 存储检查事件监听回调
+     */
+	protected StorageHandleTask(Context context, DownloadInfo di, StorageListener listener) {
 		storageListener = listener;
 		mContext = context;
 		this.di = di;
@@ -30,16 +43,24 @@ class StorageHandlerTask extends Thread {
         if (isDownloadExist(di.getPath())) {
             return;
         }
+        // 检查路径并创建文件
         if (!createStorageDir()) {
             // 建立目录失败
             return;
         }
 	}
 
+
+    /**
+     * 检查sd卡是否存在、空间是否足够等，并创建文件。（目前创建目录，打算改为创建满大小的假文件）
+     * @return
+     */
 	private boolean createStorageDir() {
 		Log.e("", "begin createStorageDir,downloadUrl=" + di.getUrl());
 		long availableSize = 0;
         long softSize = 0;
+
+        //通过url获取文件大小，并与传入的downloadinfo中的文件大小比较
 		try {
 			softSize = DownloadUtils.getFileSize(di.getUrl());
             if(softSize != di.getSize() || di.getSize() <= 0){
@@ -52,7 +73,7 @@ class StorageHandlerTask extends Thread {
 			return false;
 		}
 
-		// 判断sd卡是否存在
+		// 判断sd卡是否存在，存储空间是否足够
 		if (isSdPresent()) {
 			Log.d("", "sdcard exist");
             File file = new File(di.getPath());
@@ -76,8 +97,11 @@ class StorageHandlerTask extends Thread {
 	}
 
 
-
-	// 检查是否存在，并根据是否下载完成触发不同事件
+    /**
+     * 检查是否下载过或正在下载
+     * @param downloadDir 下载路径
+     * @return
+     */
 	private boolean isDownloadExist(String downloadDir) {
 		File file = new File(downloadDir);
 		File tempFile = new File(downloadDir + Unfinished_Sign);

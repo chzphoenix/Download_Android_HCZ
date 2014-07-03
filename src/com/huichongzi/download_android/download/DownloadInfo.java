@@ -1,7 +1,13 @@
 package com.huichongzi.download_android.download;
 
+/**
+ * 下载信息bean类
+ * Created by cuihz on 2014/7/3.
+ */
 public class DownloadInfo {
-	
+    /**
+     * 下载唯一标识，必须保证唯一
+     */
     private String id;
 	private String name;
     private String path;
@@ -84,11 +90,8 @@ public class DownloadInfo {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         DownloadInfo that = (DownloadInfo) o;
-
         if (id != null ? !id.equals(that.id) : that.id != null) return false;
-
         return true;
     }
 
