@@ -1,7 +1,6 @@
 package com.huichongzi.download_android.download;
 
 import java.io.File;
-import android.content.Context;
 import android.os.Environment;
 import android.util.Log;
 
@@ -13,7 +12,6 @@ import android.util.Log;
 class StorageHandleTask extends Thread {
     //监听存储检查线程，用于各种事件回调
 	private StorageListener storageListener = null;
-	private Context mContext = null;
     private DownloadInfo di;
     //临时文件的扩展名
 	protected static final String Unfinished_Sign = ".temp";
@@ -23,13 +21,11 @@ class StorageHandleTask extends Thread {
 
     /**
      * 构造函数
-     * @param context
      * @param di 下载信息
      * @param listener 存储检查事件监听回调
      */
-	protected StorageHandleTask(Context context, DownloadInfo di, StorageListener listener) {
+	protected StorageHandleTask(DownloadInfo di, StorageListener listener) {
 		storageListener = listener;
-		mContext = context;
 		this.di = di;
 	}
 
@@ -63,12 +59,18 @@ class StorageHandleTask extends Thread {
         //通过url获取文件大小，并与传入的downloadinfo中的文件大小比较
 		try {
 			softSize = DownloadUtils.getFileSize(di.getUrl());
-            if(softSize != di.getSize() || di.getSize() <= 0){
+            if((di.getMode() & DownloadOrder.MODE_SIZE_START) == 0){
+                di.setSize(softSize);
+            }
+            else if(softSize != di.getSize() || di.getSize() <= 0){
                 storageListener.onFileSizeError();
+                di.setState(DownloadOrder.STATE_FAILED);
+                DownloadList.remove(di.getId());
                 return false;
             }
 		} catch (Exception e) {
-			e.printStackTrace();
+            di.setState(DownloadOrder.STATE_FAILED);
+            DownloadList.remove(di.getId());
 			storageListener.onDownloadPathConnectError(di.getUrl() + "连接下载地址错误" + e.getMessage());
 			return false;
 		}
@@ -87,10 +89,14 @@ class StorageHandleTask extends Thread {
                 storageListener.onNotDownload(di.getPath());
 			}
 			else{
+                di.setState(DownloadOrder.STATE_FAILED);
+                DownloadList.remove(di.getId());
 				storageListener.onStorageNotEnough(softSize, availableSize);
 			}
 		}
         else{
+            di.setState(DownloadOrder.STATE_FAILED);
+            DownloadList.remove(di.getId());
             storageListener.onStorageNotMount(di.getPath());
         }
 		return true;
@@ -105,14 +111,15 @@ class StorageHandleTask extends Thread {
 	private boolean isDownloadExist(String downloadDir) {
 		File file = new File(downloadDir);
 		File tempFile = new File(downloadDir + Unfinished_Sign);
-		if (file.exists()) {
+		if (file.exists() && file.isFile()) {
+            di.setState(DownloadOrder.STATE_SUCCESS);
             // 下载完成
 			if (storageListener != null) {
 				storageListener.onAlreadyDownload(downloadDir);
 			}
 			return true;
 		}
-        else if (tempFile.exists()) {
+        else if (tempFile.exists() && tempFile.isFile()) {
             // 下载中但没有完成
 			Log.d("checkIsCompleteForOutPackage", downloadDir
 					+ "　download size=" + tempFile.length());

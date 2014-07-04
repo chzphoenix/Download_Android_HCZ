@@ -9,7 +9,6 @@ import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 
-import android.content.Context;
 import android.util.Log;
 
 /**
@@ -20,42 +19,31 @@ import android.util.Log;
 class SingleDownloadThread extends Thread {
 
     private static final int BUFFER_SIZE = 1024 * 10;
-    private URL url;
+    private DownloadInfo di;
     //线程id，用来区分多线程中的每个线程
     private int threadId;
     private File file;
     private long startPosition;
     private long endPosition;
     private long curPosition;
-    // 用于标识当前线程是否下载完成
-    private boolean finished = false;
     private long downloadSize = 0;
-    private DownloadTask.TaskState taskState;
     private DownloaderListener downloadListener;
     private static final int connTimeout = 1000 * 40;
     private static final int readTimeout = 1000 * 60;
     // 下载中停止一段时间，以防过于耗费资源
     private static final int Sleep_Time = 30;
-    private Context mContext = null;
 
 
-    protected SingleDownloadThread(int threadId, URL url, File file, long startPosition,
-                                   long endPosition, DownloadTask.TaskState taskState,
-                                   DownloaderListener downloadListener, Context context) {
+
+    protected SingleDownloadThread(int threadId, DownloadInfo di, File file, long startPosition,
+                                   long endPosition, DownloaderListener downloadListener) {
         this.threadId = threadId;
-        this.url = url;
+        this.di = di;
         this.file = file;
         this.startPosition = startPosition;
         this.curPosition = startPosition;
         this.endPosition = endPosition;
-        this.taskState = taskState;
         this.downloadListener = downloadListener;
-        mContext = context;
-        // 添加判断，以防下载完成但用户取消导致文件名未更改
-        if (startPosition > endPosition && endPosition > 0) {
-            Log.e(this.toString(), "Start postition is larger than end position, set finished to true");
-            finished = true;
-        }
     }
 
     @Override
@@ -65,6 +53,7 @@ class SingleDownloadThread extends Thread {
         byte[] buf = new byte[BUFFER_SIZE];
         HttpURLConnection con = null;
         try {
+            URL url = new URL(di.getUrl());
             con = (HttpURLConnection) url.openConnection();
             con.setConnectTimeout(connTimeout);
             con.setReadTimeout(readTimeout);
@@ -83,13 +72,8 @@ class SingleDownloadThread extends Thread {
             bis = new BufferedInputStream(is);
 
             // 开始循环以流的形式读写文件
-            while (curPosition < endPosition && !taskState.isStop) {
+            while (curPosition < endPosition && di.getState() == DownloadOrder.STATE_DOWNING) {
                 try {
-                    //如果下载暂停，则休眠1秒后循环
-                    if (taskState.isPause) {
-                        Thread.sleep(1000);
-                        continue;
-                    }
                     int len = bis.read(buf, 0, BUFFER_SIZE);
                     if (len == -1) {
                         break;
@@ -107,35 +91,31 @@ class SingleDownloadThread extends Thread {
                 } catch (InterruptedException e) {
                     Log.e("SingleDownloadThread run",
                             "download Interrupt error:" + e.getMessage());
+                    di.setState(DownloadOrder.STATE_FAILED);
                     downloadListener.onDownloadFailed();
                 }
             }
             Log.e(toString(), "Total downloadsize: " + downloadSize);
-            // 下载完成设为true
-            this.finished = true;
             bis.close();
             fos.close();
         } catch (SocketTimeoutException e) {
             Log.e("SingleDownloadThread run", "download SocketTimeoutException ");
+            di.setState(DownloadOrder.STATE_FAILED);
             downloadListener.onDownloadFailed();
         } catch (IOException e) {
             e.printStackTrace();
             Log.e("SingleDownloadThread run", "download IOException " + e.getMessage());
+            di.setState(DownloadOrder.STATE_FAILED);
             downloadListener.onDownloadFailed();
         } catch (Exception e) {
             Log.e("SingleDownloadThread run", "download error " + e.getMessage());
+            di.setState(DownloadOrder.STATE_FAILED);
             downloadListener.onDownloadFailed();
             e.printStackTrace();
         }
     }
 
-    /**
-     * 判断本线程是否结束
-     * @return
-     */
-    protected boolean isFinished() {
-        return finished;
-    }
+
 
     /**
      * 获取本线程已下载的大小

@@ -1,10 +1,7 @@
 package com.huichongzi.download_android.download;
 
-import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.os.StatFs;
 
+import android.os.StatFs;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -20,29 +17,6 @@ import java.security.NoSuchAlgorithmException;
  */
 class DownloadUtils {
 
-
-    /**
-     * 判断网络是否可用
-     * @param context
-     * @return
-     */
-    protected static boolean isNetworkAvailable(Context context) {
-        if(context != null){
-            ConnectivityManager manager = (ConnectivityManager) context
-                    .getSystemService(Context.CONNECTIVITY_SERVICE);
-            if (manager != null) {
-                NetworkInfo[] info = manager.getAllNetworkInfo();
-                if (info != null) {
-                    for (int i = 0; i < info.length; i++) {
-                        if (info[i].getState() == NetworkInfo.State.CONNECTED) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
 
 
     /**

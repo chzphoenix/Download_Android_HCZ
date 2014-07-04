@@ -52,7 +52,7 @@ public interface DownloaderListener {
     /**
      * 下载成功
      */
-    public void onDownloadSuccess(String md5);
+    public void onDownloadSuccess();
 
 
 
