@@ -1,11 +1,14 @@
 package com.huichongzi.download_android.download;
 
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Environment;
 import android.os.StatFs;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import android.util.Log;
+
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
@@ -17,6 +20,59 @@ import java.security.NoSuchAlgorithmException;
  */
 class DownloadUtils {
 
+
+    /**
+     * 网络是否有效
+     * @param context
+     * @return
+     */
+    protected static boolean isNetAlive(Context context){
+        ConnectivityManager conn = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo info = conn.getActiveNetworkInfo();
+        if(info != null && info.isAvailable()){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+
+    /**
+     * 检查sd卡是否存在
+     * @return
+     */
+    protected static boolean isSdcardMount(){
+        return Environment.getExternalStorageState().equals(
+                Environment.MEDIA_MOUNTED);
+    }
+
+
+    /**
+     * 创建下载临时文件
+     * @param di 下载文件信息
+     * @return
+     */
+    protected static void createTmpFile(DownloadInfo di) throws Exception{
+        File file = new File(di.getPath() + StorageHandleTask.Unfinished_Sign);
+        // 创建下载目录
+        if (!file.exists()) {
+            file.getParentFile().mkdirs();
+        }
+        FileOutputStream fos = new FileOutputStream(file);
+        int bufferSize = 4 * 1024 * 1024;
+        long fileSize = di.getSize();
+        int num = (int)(fileSize / bufferSize);
+        int ext = (int)(fileSize % bufferSize);
+        byte[] buffer;
+        for(int i = 0; i < num; i++){
+            buffer = new byte[bufferSize];
+            fos.write(buffer);
+        }
+        fos.write(new byte[ext]);
+        fos.flush();
+        fos.close();
+    }
 
 
     /**

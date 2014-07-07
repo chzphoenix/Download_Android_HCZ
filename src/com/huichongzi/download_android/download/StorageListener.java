@@ -50,4 +50,9 @@ interface StorageListener {
      * 下载前校验文件大小失败
      */
     void onFileSizeError();
+
+    /**
+     * 创建下载文件失败
+     */
+    void onCreateFailed();
 }

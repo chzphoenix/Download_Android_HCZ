@@ -35,7 +35,7 @@ class StorageHandleTask extends Thread {
 	 */
 	@Override
 	public void run() {
-        // 首先检查是否下载过，如果下载过则不再建立空间
+        // 首先检查是否下载完成
         if (isDownloadExist(di.getPath())) {
             return;
         }
@@ -48,11 +48,11 @@ class StorageHandleTask extends Thread {
 
 
     /**
-     * 检查sd卡是否存在、空间是否足够等，并创建文件。（目前创建目录，打算改为创建满大小的假文件）
+     * 检查是否文件下载一半；sd卡是否存在、空间是否足够等，并创建文件。
      * @return
      */
 	private boolean createStorageDir() {
-		Log.e("", "begin createStorageDir,downloadUrl=" + di.getUrl());
+		Log.i("", "begin createStorageDir,downloadUrl=" + di.getUrl());
 		long availableSize = 0;
         long softSize = 0;
 
@@ -75,42 +75,63 @@ class StorageHandleTask extends Thread {
 			return false;
 		}
 
+
+        //如果文件为下载一半，不必创建存储空间
+        File tempFile = new File(di.getPath() + Unfinished_Sign);
+        if (tempFile.exists() && tempFile.isFile()) {
+            // 下载中但没有完成
+            Log.d("checkIsCompleteForOutPackage", di.getPath()
+                    + "　download size=" + tempFile.length());
+            if (storageListener != null) {
+                storageListener.onDownloadNotFinished(di.getPath()
+                        + Unfinished_Sign);
+            }
+            return true;
+        }
+
+
+
+
 		// 判断sd卡是否存在，存储空间是否足够
-		if (isSdPresent()) {
-			Log.d("", "sdcard exist");
-            File file = new File(di.getPath());
-            availableSize = DownloadUtils.getAvailableSize(file.getParentFile().getPath());
-			Log.d("createStorageDir", "sd availaSize=" + availableSize
-					+ "softsize=" + softSize);
-			// 如果sd卡空间足够
-			if (availableSize > softSize + miniSdSize) {
-                // 正常下载
-                mkdir(di.getPath());
-                storageListener.onNotDownload(di.getPath());
-			}
-			else{
+        try {
+            if (DownloadUtils.isSdcardMount()) {
+                Log.d("", "sdcard exist");
+                File file = new File(di.getPath());
+                availableSize = DownloadUtils.getAvailableSize(file.getParentFile().getPath());
+                Log.d("createStorageDir", "sd availaSize=" + availableSize
+                        + "softsize=" + softSize);
+                // 如果sd卡空间足够
+                if (availableSize > softSize + miniSdSize) {
+                    // 正常下载
+                    DownloadUtils.createTmpFile(di);
+                    storageListener.onNotDownload(di.getPath());
+                } else {
+                    di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
+                    DownloadList.remove(di.getId());
+                    storageListener.onStorageNotEnough(softSize, availableSize);
+                }
+            } else {
                 di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
                 DownloadList.remove(di.getId());
-				storageListener.onStorageNotEnough(softSize, availableSize);
-			}
-		}
-        else{
-            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            DownloadList.remove(di.getId());
-            storageListener.onStorageNotMount(di.getPath());
+                storageListener.onStorageNotMount(di.getPath());
+            }
+            return true;
         }
-		return true;
+        catch (Exception e){
+            e.printStackTrace();
+            storageListener.onCreateFailed();
+            return false;
+        }
 	}
 
 
     /**
-     * 检查是否下载过或正在下载
+     * 检查是否下载完成
      * @param downloadDir 下载路径
      * @return
      */
 	private boolean isDownloadExist(String downloadDir) {
 		File file = new File(downloadDir);
-		File tempFile = new File(downloadDir + Unfinished_Sign);
 		if (file.exists() && file.isFile()) {
             di.setStateAndRefresh(DownloadOrder.STATE_SUCCESS);
             // 下载完成
@@ -118,16 +139,6 @@ class StorageHandleTask extends Thread {
 				storageListener.onAlreadyDownload(downloadDir);
 			}
 			return true;
-		}
-        else if (tempFile.exists() && tempFile.isFile()) {
-            // 下载中但没有完成
-			Log.d("checkIsCompleteForOutPackage", downloadDir
-					+ "　download size=" + tempFile.length());
-			if (storageListener != null) {
-				storageListener.onDownloadNotFinished(downloadDir
-						+ Unfinished_Sign);
-			}
-            return true;
 		}
         else{
             return false;
@@ -137,20 +148,6 @@ class StorageHandleTask extends Thread {
 	
 	
 
-	
-	// sd卡是否存在
-	private static boolean isSdPresent() {
-		return Environment.getExternalStorageState().equals(
-				Environment.MEDIA_MOUNTED);
-	}
 
-	// 建立下载目录
-	private boolean mkdir(String dir) {
-		File file = new File(dir);
-		// 创建下载目录
-		if (!file.exists()) {
-			return file.mkdirs();
-		}
-		return true;
-	}
+
 }

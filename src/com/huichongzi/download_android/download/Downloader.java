@@ -14,12 +14,11 @@ import android.util.Log;
 public class Downloader {
     private DownloaderListener downloadListener = null;
     protected DownloadInfo di;
-    //下载中断是否重连
-    private static boolean isReconnect = false;
+    private Context context;
 
 
-
-    private Downloader(DownloadInfo di, DownloaderListener listener) {
+    private Downloader(Context context, DownloadInfo di, DownloaderListener listener) {
+        this.context = context;
         this.di = di;
         this.downloadListener = listener;
     }
@@ -34,19 +33,19 @@ public class Downloader {
         // 新建存储线程（存储可能需要3-5s，所以以线程方式）
         StorageHandleTask sh = new StorageHandleTask(di, new StorageListener() {
             public void onAlreadyDownload(String path) {
-                Log.d("onAlreadyDownload", di.getName() + " already exists in "
+                Log.e("onAlreadyDownload", di.getName() + " already exists in "
                         + path);
                 if (downloadListener != null) {
                     downloadListener.onDownloadRepeat(di.getName() + "文件已经下载过");
                 }
             }
             public void onDownloadNotFinished(String path) {
-                Log.e("onDownloadNotFinished", di.getName()
+                Log.i("onDownloadNotFinished", di.getName()
                         + " is download but not finished in " + path);
                 download(false);
             }
             public void onNotDownload(String path) {
-                Log.e("onNotDownload", di.getName()
+                Log.i("onNotDownload", di.getName()
                         + " is  not download,it will download in "
                         + path);
                 download(true);
@@ -78,6 +77,11 @@ public class Downloader {
                     downloadListener.onCheckFailed(di.getName() + "文件大小与服务器不符");
                 }
             }
+            public void onCreateFailed(){
+                if (downloadListener != null) {
+                    downloadListener.onCreateFailed("创建临时文件失败");
+                }
+            }
         });
         sh.start();
     }
@@ -89,7 +93,7 @@ public class Downloader {
      */
     private void download(boolean isNew) {
         // 启动文件下载线程
-        DownloadTask downloadTask = new DownloadTask(di, downloadListener, isNew);
+        DownloadTask downloadTask = new DownloadTask(context, di, downloadListener, isNew);
         downloadTask.start();
     }
 
@@ -180,14 +184,12 @@ public class Downloader {
      * @throws DownloadRepeatException 重复下载异常
      */
     public static void downloadEvent(Context context, DownloadInfo di, DownloaderListener listener) throws DownloadRepeatException{
-        Downloader downloader = new Downloader(di, listener);
-        //添加广播接收
-        DownloadReceiver.addReceiver(context);
+        Downloader downloader = new Downloader(context, di, listener);
         //检查是否已下载完成
         File file = new File(di.getPath());
         if (file.exists() && file.isFile()) {
             di.setStateAndRefresh(DownloadOrder.STATE_SUCCESS);
-            DownloadList.add(downloader);
+            DownloadList.add(context, downloader);
             throw new DownloadRepeatException("已经下载过了");
         }
         //检查是否已经在任务列表中
@@ -195,14 +197,12 @@ public class Downloader {
                 Log.d("download", di.getName() + " is downloading");
                 throw new DownloadRepeatException("已经在任务列表中");
         }
-        DownloadList.add(downloader);
+        DownloadList.add(context, downloader);
         di.setStateAndRefresh(DownloadOrder.STATE_WAIT);
     }
 
 
-    public static void setReconnect(boolean flag) {
-        isReconnect = flag;
-    }
+
 
 
     /**

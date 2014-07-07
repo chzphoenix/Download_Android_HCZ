@@ -56,7 +56,11 @@ public class DownloadInfo {
      * @return
      */
     public String getPath() {
-        return home + "/" + name + "." + type;
+        String path = home + "/" + name;
+        if(type != null && !type.equals("")){
+            path += "." + type;
+        }
+        return path;
     }
 
 
@@ -77,7 +81,7 @@ public class DownloadInfo {
     }
 
     /**
-     * 获取下载文件类型（扩展名）
+     * 获取下载文件类型（扩展名,如果包含在文件名内，则返回空）
      * @return
      */
     public String getType() {
@@ -86,7 +90,7 @@ public class DownloadInfo {
 
 
     /**
-     * 设置下载文件类型（扩展名）
+     * 设置下载文件类型（扩展名，如果包含在文件名内，则不必设置或设置为空，避免重复！）
      * @param type
      */
     public void setType(String type) {

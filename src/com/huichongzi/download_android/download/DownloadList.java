@@ -1,5 +1,8 @@
 package com.huichongzi.download_android.download;
 
+import android.content.Context;
+import android.util.Log;
+
 import java.util.Hashtable;
 import java.util.Iterator;
 
@@ -12,9 +15,11 @@ class DownloadList {
     protected static final int Max_Allow_Download = 3;
     // 当前下载的存储表
     protected static Hashtable<String, Downloader> downloadMap = new Hashtable<String, Downloader>();
+    private static Context context;
 
 
-    protected static void add(Downloader down){
+    protected static void add(Context mContext, Downloader down){
+        context = mContext;
         downloadMap.put(down.di.getId(), down);
         DownloadDB.add(down.di);
         refresh();
@@ -60,6 +65,17 @@ class DownloadList {
                 count++;
             }
             DownloadDB.update(down.di);
+        }
+        Log.i("DownList", "目前下载数" + count);
+        //当存在下载任务，添加广播；否则移除广播
+        if(context == null){
+            return;
+        }
+        if(count <= 0){
+            DownloadReceiver.removeReceiver(context);
+        }
+        else{
+            DownloadReceiver.addReceiver(context);
         }
     }
 

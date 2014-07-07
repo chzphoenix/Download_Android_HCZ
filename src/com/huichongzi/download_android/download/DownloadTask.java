@@ -2,6 +2,8 @@ package com.huichongzi.download_android.download;
 
 import java.io.File;
 import java.io.IOException;
+
+import android.content.Context;
 import android.util.Log;
 
 import java.security.NoSuchAlgorithmException;
@@ -28,14 +30,17 @@ class DownloadTask extends Thread {
 	private UnFinishedConfFile unFinishConf;
     private DownloadInfo di;
     private boolean isNew;
+    private Context context;
 
     /**
      * 构造函数
+     * @param context
      * @param di 下载信息
      * @param listener 下载事件监听回调
      * @param isNew 是否为新下载文件
      */
-    protected DownloadTask(DownloadInfo di, DownloaderListener listener, boolean isNew) {
+    protected DownloadTask(Context context, DownloadInfo di, DownloaderListener listener, boolean isNew) {
+        this.context = context;
 		this.downloadListener = listener;
         this.di = di;
         this.isNew = isNew;
@@ -47,7 +52,7 @@ class DownloadTask extends Thread {
         //初始化下载状态文件
         unFinishConf = new UnFinishedConfFile(di.getPath());
         //如果是断点续传，获取下载的线程数
-        if(isNew && !unFinishConf.isConfNull()){
+        if(!isNew && !unFinishConf.isConfNull()){
             threadNum = Integer.parseInt(unFinishConf.getValue("threadNum"));
             isDownMidle = true;
         }
@@ -64,8 +69,11 @@ class DownloadTask extends Thread {
 
 			//如果是断点续传，首先判断记录的大小与下载信息中大小是否一致，不一致则删除重下
 			if(isDownMidle && fileSize != Integer.parseInt(unFinishConf.getValue("fileSize"))){
-				file.delete();
-				file.getParentFile().mkdirs();
+                Log.i("DownTask", "断点续传：记载文件大小与给定的大小不符");
+				DownloadUtils.removeFile(di.getPath());
+                DownloadUtils.createTmpFile(di);
+                unFinishConf = new UnFinishedConfFile(di.getPath());
+                unFinishConf.put("threadNum", threadNum + "");
 				isDownMidle = false;
 			}
 			//记录文件大小，以便上面判断使用
@@ -83,13 +91,13 @@ class DownloadTask extends Thread {
 					//long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize - 1;
 					long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize;
 					// 启动线程，分别下载自己需要下载的部分
-					fdt = new SingleDownloadThread(i, di, file, beginPos, endPos, downloadListener);
+					fdt = new SingleDownloadThread(context, i, di, file, beginPos, endPos, downloadListener);
 				} else {
 					long beginPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "start")) : i * blockSize;
 					//long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize - 1 + downloadSizeMore;
 					long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize + downloadSizeMore;
 					// 最后一个线程下载字节=平均+多余字节
-					fdt = new SingleDownloadThread(i, di, file, beginPos, endPos, downloadListener);
+					fdt = new SingleDownloadThread(context, i, di, file, beginPos, endPos, downloadListener);
 				}
 				fdt.setName("Thread" + i);
 				fdt.start();
@@ -103,6 +111,7 @@ class DownloadTask extends Thread {
 			}
             //循环监视各个子线程。
 			while (di.getState() == DownloadOrder.STATE_DOWNING) {
+                Log.d("DownTaskState", di.getState() + "");
                 // 先把整除的余数搞定
                 downloadedSize = downloadSizeMore;
                 for (int i = 0; i < fds.length; i++) {
