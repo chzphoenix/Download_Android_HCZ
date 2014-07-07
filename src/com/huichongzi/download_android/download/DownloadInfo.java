@@ -16,6 +16,7 @@ public class DownloadInfo {
     private int group;
     private int mode;
     private int state;
+    private String other;
 
 
     /**
@@ -187,12 +188,40 @@ public class DownloadInfo {
 
     /**
      * 设置下载状态，具体见DownloadOrder类
-     * 设置成功后刷新下载列表
      * @param state
      */
     public void setState(int state) {
         this.state = state;
+    }
+
+
+    /**
+     * 设置下载状态并刷新下载列表，具体见DownloadOrder类
+     * 设置完成刷新一下下载列表。如下载成功后让下一个等待的任务开始执行
+     * @param state
+     */
+    public void setStateAndRefresh(int state) {
+        this.state = state;
         DownloadList.refresh();
+    }
+
+
+    /**
+     * 获取扩展信息
+     * @return
+     */
+    public String getOther() {
+        return other;
+    }
+
+
+    /**
+     * 设置扩展信息
+     * 如果是多个信息，建议使用分号进行分割
+     * @param other
+     */
+    public void setOther(String other) {
+        this.other = other;
     }
 
     @Override
@@ -205,6 +234,7 @@ public class DownloadInfo {
                 ", url='" + url + '\'' +
                 ", md5='" + md5 + '\'' +
                 ", size=" + size +
+                ", other='" + other + '\'' +
                 '}';
     }
 

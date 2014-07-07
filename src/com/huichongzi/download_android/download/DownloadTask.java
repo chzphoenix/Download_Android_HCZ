@@ -59,7 +59,7 @@ class DownloadTask extends Thread {
 		try {
 			fileSize = di.getSize();
 			File file = new File(tmpPath);
-            di.setState(DownloadOrder.STATE_DOWNING);
+            di.setStateAndRefresh(DownloadOrder.STATE_DOWNING);
             downloadListener.onStartDownload();
 
 			//如果是断点续传，首先判断记录的大小与下载信息中大小是否一致，不一致则删除重下
@@ -127,7 +127,7 @@ class DownloadTask extends Thread {
             }
 		} catch (Exception e) {
 			e.printStackTrace();
-            di.setState(DownloadOrder.STATE_FAILED);
+            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
 			downloadListener.onDownloadFailed();
 		}
 
@@ -148,14 +148,14 @@ class DownloadTask extends Thread {
         //验证md5
         if ((di.getMode() & DownloadOrder.MODE_MD5_END) != 0 && !checkMd5(downloadFile)) {
             DownloadUtils.removeFile(di.getPath());
-            di.setState(DownloadOrder.STATE_FAILED);
+            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
             downloadListener.onCheckFailed("文件MD5不同！");
             return;
         }
         //验证大小
         if ((di.getMode() & DownloadOrder.MODE_SIZE_END) != 0 && downloadFile.length() != di.getSize()) {
             DownloadUtils.removeFile(di.getPath());
-            di.setState(DownloadOrder.STATE_FAILED);
+            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
             downloadListener.onCheckFailed("文件大小不同！");
             return;
         }
@@ -167,7 +167,7 @@ class DownloadTask extends Thread {
             downloadFile.renameTo(toFile);
         }
         // 从下载列表中删除已下载成功的应用
-        di.setState(DownloadOrder.STATE_SUCCESS);
+        di.setStateAndRefresh(DownloadOrder.STATE_SUCCESS);
         if (downloadListener != null) {
             downloadListener.onDownloadSuccess();
         }

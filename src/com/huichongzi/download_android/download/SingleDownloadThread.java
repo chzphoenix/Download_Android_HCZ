@@ -91,7 +91,7 @@ class SingleDownloadThread extends Thread {
                 } catch (InterruptedException e) {
                     Log.e("SingleDownloadThread run",
                             "download Interrupt error:" + e.getMessage());
-                    di.setState(DownloadOrder.STATE_FAILED);
+                    di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
                     downloadListener.onDownloadFailed();
                 }
             }
@@ -100,16 +100,16 @@ class SingleDownloadThread extends Thread {
             fos.close();
         } catch (SocketTimeoutException e) {
             Log.e("SingleDownloadThread run", "download SocketTimeoutException ");
-            di.setState(DownloadOrder.STATE_FAILED);
+            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
             downloadListener.onDownloadFailed();
         } catch (IOException e) {
             e.printStackTrace();
             Log.e("SingleDownloadThread run", "download IOException " + e.getMessage());
-            di.setState(DownloadOrder.STATE_FAILED);
+            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
             downloadListener.onDownloadFailed();
         } catch (Exception e) {
             Log.e("SingleDownloadThread run", "download error " + e.getMessage());
-            di.setState(DownloadOrder.STATE_FAILED);
+            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
             downloadListener.onDownloadFailed();
             e.printStackTrace();
         }

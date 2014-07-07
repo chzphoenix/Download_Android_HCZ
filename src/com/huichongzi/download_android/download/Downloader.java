@@ -1,6 +1,9 @@
 package com.huichongzi.download_android.download;
 
 import java.io.File;
+import java.util.List;
+
+import android.content.Context;
 import android.util.Log;
 
 
@@ -27,7 +30,7 @@ public class Downloader {
      * 1、有异常或错误
      * 2、未下载或未下载完开启下载线程
      */
-    private void tryStorage() {
+    public void tryStorage() {
         // 新建存储线程（存储可能需要3-5s，所以以线程方式）
         StorageHandleTask sh = new StorageHandleTask(di, new StorageListener() {
             public void onAlreadyDownload(String path) {
@@ -95,7 +98,7 @@ public class Downloader {
      * 删除文件
      */
     protected void stopDownload() {
-        di.setState(DownloadOrder.STATE_STOP);
+        di.setStateAndRefresh(DownloadOrder.STATE_STOP);
         DownloadUtils.removeFile(di.getPath());
     }
 
@@ -108,9 +111,9 @@ public class Downloader {
      */
     public static void pauseDownload(String id) {
         if(DownloadList.has(id)){
-            Downloader down = DownloadList.getFromMap(id);
+            Downloader down = DownloadList.get(id);
             if(downloaderIsUsable(down)){
-                down.di.setState(DownloadOrder.STATE_PAUSE);
+                down.di.setStateAndRefresh(DownloadOrder.STATE_PAUSE);
                 return;
             }
             DownloadList.remove(id);
@@ -125,9 +128,9 @@ public class Downloader {
      */
     public static void resumeDownload(String id) throws DownloadNotExistException {
         if(DownloadList.has(id)){
-            Downloader down = DownloadList.getFromMap(id);
+            Downloader down = DownloadList.get(id);
             if(downloaderIsUsable(down)){
-                down.di.setState(DownloadOrder.STATE_WAIT);
+                down.di.setStateAndRefresh(DownloadOrder.STATE_WAIT);
                 return;
             }
             DownloadList.remove(id);
@@ -140,12 +143,12 @@ public class Downloader {
 
 
     /**
-     * 取消下载
+     * 取消下载/删除已下载文件
      * @param id
      */
     public static void cancelDownload(String id){
         if(DownloadList.has(id)){
-            Downloader down = DownloadList.getFromMap(id);
+            Downloader down = DownloadList.get(id);
             if(downloaderIsUsable(down)){
                 down.stopDownload();
             }
@@ -155,27 +158,45 @@ public class Downloader {
 
 
     /**
+     * 获取数据库中的下载列表。
+     * 用于程序启动时
+     * @param group 下载组
+     * @param isDowned 是否已下载完
+     * @return
+     */
+    public static List<DownloadInfo> getDownloadList(String group, boolean isDowned){
+        return DownloadDB.getList(group, isDowned);
+    }
+
+
+
+
+
+    /**
      * 添加下载任务
+     * @param context
      * @param di 下载信息
      * @param listener 下载事件回调
      * @throws DownloadRepeatException 重复下载异常
      */
-    public static void downloadEvent(DownloadInfo di, DownloaderListener listener) throws DownloadRepeatException{
+    public static void downloadEvent(Context context, DownloadInfo di, DownloaderListener listener) throws DownloadRepeatException{
         Downloader downloader = new Downloader(di, listener);
+        //添加广播接收
+        DownloadReceiver.addReceiver(context);
         //检查是否已下载完成
         File file = new File(di.getPath());
         if (file.exists() && file.isFile()) {
-            di.setState(DownloadOrder.STATE_SUCCESS);
+            di.setStateAndRefresh(DownloadOrder.STATE_SUCCESS);
             DownloadList.add(downloader);
             throw new DownloadRepeatException("已经下载过了");
         }
         //检查是否已经在任务列表中
-        if (DownloadList.has(di.getId()) && downloaderIsUsable(DownloadList.getFromMap(di.getId()))) {
+        if (DownloadList.has(di.getId()) && downloaderIsUsable(DownloadList.get(di.getId()))) {
                 Log.d("download", di.getName() + " is downloading");
                 throw new DownloadRepeatException("已经在任务列表中");
         }
         DownloadList.add(downloader);
-        di.setState(DownloadOrder.STATE_WAIT);
+        di.setStateAndRefresh(DownloadOrder.STATE_WAIT);
     }
 
 

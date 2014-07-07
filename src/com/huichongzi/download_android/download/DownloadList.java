@@ -2,7 +2,6 @@ package com.huichongzi.download_android.download;
 
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * 下载列表类
@@ -17,6 +16,8 @@ class DownloadList {
 
     protected static void add(Downloader down){
         downloadMap.put(down.di.getId(), down);
+        DownloadDB.add(down.di);
+        refresh();
     }
 
     protected static boolean has(String id){
@@ -27,17 +28,17 @@ class DownloadList {
         if(downloadMap.contains(id)){
             Downloader down = downloadMap.get(id);
             if(down != null && down.di != null){
-                down.di.setState(DownloadOrder.STATE_STOP);
+                down.di.setStateAndRefresh(DownloadOrder.STATE_STOP);
             }
             downloadMap.remove(id);
         }
+        DownloadDB.delete(id);
+        refresh();
     }
 
-    protected static Downloader getFromMap(String id){
+    protected static Downloader get(String id){
         return downloadMap.get(id);
     }
-
-
 
     protected static int getSize(){
         return downloadMap.size();
@@ -45,26 +46,38 @@ class DownloadList {
 
 
     /**
-     * 刷新下载列表，未到下载上限切有等待下载时自动下载
+     * 刷新下载列表，未到下载上限且有等待下载时自动下载
      */
     protected static void refresh(){
-        
+        int count = 0;
+        for (Iterator<Downloader> iter = downloadMap.values().iterator(); iter.hasNext(); ) {
+            Downloader down = iter.next();
+            if (down.di.getState() == DownloadOrder.STATE_DOWNING) {
+                count++;
+            }
+            else if(count < Max_Allow_Download && down.di.getState() == DownloadOrder.STATE_WAIT){
+                down.tryStorage();
+                count++;
+            }
+            DownloadDB.update(down.di);
+        }
     }
 
 
     /**
-     * 获取正在下载的文件数
-     * @return
+     * 下载中的任务全部变为等待。
+     * sd卡卸载、网络中断时
      */
-    protected static int getDowningTaskSize(){
-        int size = 0;
+    protected static void waitAll(){
         for (Iterator<Downloader> iter = downloadMap.values().iterator(); iter.hasNext(); ) {
             Downloader down = iter.next();
             if (down.di.getState() == DownloadOrder.STATE_DOWNING) {
-                size++;
+                down.di.setState(DownloadOrder.STATE_WAIT);
             }
         }
-        return size;
     }
+
+
+
 
 }
