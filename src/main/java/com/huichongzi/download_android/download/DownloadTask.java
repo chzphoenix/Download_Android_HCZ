@@ -2,9 +2,9 @@ package com.huichongzi.download_android.download;
 
 import java.io.File;
 import java.io.IOException;
-
 import android.content.Context;
-import android.util.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.NoSuchAlgorithmException;
 
@@ -16,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
  * Created by cuihz on 2014/7/3.
  */
 class DownloadTask extends Thread {
+    private static final Logger logger = LoggerFactory.getLogger(Downloader.class);
 	private long fileSize = 0;
 	// 每一个线程分担的下载量
 	private long blockSize;
@@ -56,8 +57,7 @@ class DownloadTask extends Thread {
             threadNum = Integer.parseInt(unFinishConf.getValue("threadNum"));
             isDownMidle = true;
         }
-        Log.d("DownloadTask", "build DownloadTask url=" + di.getUrl()
-                + ",tmpPath=" + tmpPath);
+        logger.info("build DownloadTask url={}, ,tmpPath={}", di.getUrl(), tmpPath);
 		SingleDownloadThread[] fds = new SingleDownloadThread[threadNum];
 		//记录下载线程数，以便断点续传时能使用正确的线程数下载
 		unFinishConf.put("threadNum", threadNum + "");
@@ -69,7 +69,7 @@ class DownloadTask extends Thread {
 
 			//如果是断点续传，首先判断记录的大小与下载信息中大小是否一致，不一致则删除重下
 			if(isDownMidle && fileSize != Integer.parseInt(unFinishConf.getValue("fileSize"))){
-                Log.i("DownTask", "断点续传：记载文件大小与给定的大小不符");
+                logger.warn("{} 断点记载文件大小与给定的大小不符，重新下载", di.getName());
 				DownloadUtils.removeFile(di.getPath());
                 DownloadUtils.createTmpFile(di);
                 unFinishConf = new UnFinishedConfFile(di.getPath());
@@ -111,7 +111,7 @@ class DownloadTask extends Thread {
 			}
             //循环监视各个子线程。
 			while (di.getState() == DownloadOrder.STATE_DOWNING) {
-                Log.d("DownTaskState", di.getState() + "");
+                logger.debug("{} state is {}", di.getName(), di.getState());
                 // 先把整除的余数搞定
                 downloadedSize = downloadSizeMore;
                 for (int i = 0; i < fds.length; i++) {

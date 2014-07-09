@@ -1,8 +1,10 @@
 package com.huichongzi.download_android.download;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
-import android.os.Environment;
-import android.util.Log;
+
 
 /**
  * 存储检查操作线程类
@@ -10,6 +12,7 @@ import android.util.Log;
  * Created by cuihz on 2014/7/3.
  */
 class StorageHandleTask extends Thread {
+    private static final Logger logger = LoggerFactory.getLogger(Downloader.class);
     //监听存储检查线程，用于各种事件回调
 	private StorageListener storageListener = null;
     private DownloadInfo di;
@@ -52,7 +55,7 @@ class StorageHandleTask extends Thread {
      * @return
      */
 	private boolean createStorageDir() {
-		Log.i("", "begin createStorageDir,downloadUrl=" + di.getUrl());
+        logger.debug("{} begin createStorageDir,downloadUrl= {}", di.getName(), di.getUrl());
 		long availableSize = 0;
         long softSize = 0;
 
@@ -80,8 +83,6 @@ class StorageHandleTask extends Thread {
         File tempFile = new File(di.getPath() + Unfinished_Sign);
         if (tempFile.exists() && tempFile.isFile()) {
             // 下载中但没有完成
-            Log.d("checkIsCompleteForOutPackage", di.getPath()
-                    + "　download size=" + tempFile.length());
             if (storageListener != null) {
                 storageListener.onDownloadNotFinished(di.getPath()
                         + Unfinished_Sign);
@@ -95,11 +96,10 @@ class StorageHandleTask extends Thread {
 		// 判断sd卡是否存在，存储空间是否足够
         try {
             if (DownloadUtils.isSdcardMount()) {
-                Log.d("", "sdcard exist");
+                logger.debug("{} sdcard exist", di.getName());
                 File file = new File(di.getPath());
                 availableSize = DownloadUtils.getAvailableSize(file.getParentFile().getPath());
-                Log.d("createStorageDir", "sd availaSize=" + availableSize
-                        + "softsize=" + softSize);
+                logger.debug("{} sd availaSize= {}, softsize=", di.getName(), availableSize, softSize);
                 // 如果sd卡空间足够
                 if (availableSize > softSize + miniSdSize) {
                     // 正常下载

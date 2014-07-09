@@ -5,13 +5,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
-import android.util.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * 下载广播接收类
  * Created by cuihz on 2014/7/7.
  */
 public class DownloadReceiver extends BroadcastReceiver{
+    private static final Logger logger = LoggerFactory.getLogger(DownloadReceiver.class);
     private static DownloadReceiver downloadReceiver;
     private boolean isSdcardMounted = true;
     private boolean isNetAlive = true;
@@ -19,12 +22,12 @@ public class DownloadReceiver extends BroadcastReceiver{
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
         if(action.equals(Intent.ACTION_MEDIA_EJECT)){
-            Log.i("DownloadReceiver", "sd卡卸载");
+            logger.debug("sdcard unmounted");
             DownloadList.waitAll();
             isSdcardMounted = false;
         }
         if(action.equals(Intent.ACTION_MEDIA_MOUNTED)){
-            Log.i("DownloadReceiver", "sd卡装载");
+            logger.debug("sdcard mounted");
             if(isNetAlive){
                 DownloadList.refresh();
                 isSdcardMounted = true;
@@ -32,14 +35,14 @@ public class DownloadReceiver extends BroadcastReceiver{
         }
         if(action.equals(ConnectivityManager.CONNECTIVITY_ACTION)){
             if(DownloadUtils.isNetAlive(context)){
-                Log.i("DownloadReceiver", "网络已连接");
+                logger.debug("net connected");
                 if(isSdcardMounted){
                     DownloadList.refresh();
                     isNetAlive = true;
                 }
             }
             else{
-                Log.i("DownloadReceiver", "网络断开");
+                logger.debug("sdcard unconnected");
                 DownloadList.waitAll();
                 isNetAlive = false;
             }
@@ -65,7 +68,7 @@ public class DownloadReceiver extends BroadcastReceiver{
         filter2.setPriority(1000);
         filter2.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         context.getApplicationContext().registerReceiver(downloadReceiver, filter2);
-        Log.i("DownloadReceiver", "注册");
+        logger.info("registe receiver");
     }
 
 
@@ -77,7 +80,7 @@ public class DownloadReceiver extends BroadcastReceiver{
         try {
             if (downloadReceiver != null) {
                 context.getApplicationContext().unregisterReceiver(downloadReceiver);
-                Log.i("DownloadReceiver", "注销");
+                logger.info("unregiste receiver");
             }
         }
         catch(IllegalArgumentException e){

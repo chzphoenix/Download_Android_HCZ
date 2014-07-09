@@ -4,7 +4,9 @@ import java.io.File;
 import java.util.List;
 
 import android.content.Context;
-import android.util.Log;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -15,6 +17,7 @@ public class Downloader {
     private DownloaderListener downloadListener = null;
     protected DownloadInfo di;
     private Context context;
+    private static final Logger logger = LoggerFactory.getLogger(Downloader.class);
 
 
     private Downloader(Context context, DownloadInfo di, DownloaderListener listener) {
@@ -33,51 +36,47 @@ public class Downloader {
         // 新建存储线程（存储可能需要3-5s，所以以线程方式）
         StorageHandleTask sh = new StorageHandleTask(di, new StorageListener() {
             public void onAlreadyDownload(String path) {
-                Log.e("onAlreadyDownload", di.getName() + " already exists in "
-                        + path);
+                logger.warn("{} already exists in {}", di.getName(), path);
                 if (downloadListener != null) {
                     downloadListener.onDownloadRepeat(di.getName() + "文件已经下载过");
                 }
             }
             public void onDownloadNotFinished(String path) {
-                Log.i("onDownloadNotFinished", di.getName()
-                        + " is download but not finished in " + path);
+                logger.info("{} is download but not finished in {}", di.getName(), path);
                 download(false);
             }
             public void onNotDownload(String path) {
-                Log.i("onNotDownload", di.getName()
-                        + " is  not download,it will download in "
-                        + path);
+                logger.info("{} is not download,it will download in {}", di.getName(), path);
                 download(true);
             }
             public void onStorageNotEnough(long softSize, long avilableSize) {
-                Log.e("onStorageNotEnough", di.getName()
-                        + "not enough size sdsize=" + avilableSize);
+                logger.error("{} not enough size, sdsize={}", di.getName(), avilableSize);
                 String msg = "空间不足";
                 if (downloadListener != null) {
                     downloadListener.onCreateFailed(msg);
                 }
             }
             public void onStorageNotMount(String path) {
-                Log.e("onStorageNotMount", di.getName() + "rom can't chmod");
+                logger.error("{} sdcard not mounted", di.getName());
                 String msg = "sd卡不存在";
                 if (downloadListener != null) {
                     downloadListener.onCreateFailed(msg);
                 }
             }
             public void onDownloadPathConnectError(String msg) {
-                Log.e("onDownloadPathConnectError", di.getName() + "无法连接到下载地址" + di.getUrl());
+                logger.error("{} not connect to {}", di.getName(), di.getUrl());
                 if (downloadListener != null) {
                     downloadListener.onConnectFailed(di.getName() + msg);
                 }
             }
             public void onFileSizeError() {
-                Log.e("onDownloadPathConnectError", di.getName() + "文件大小与服务器不符" + di.getUrl());
+                logger.error("{} file size is diff of {}", di.getName(), di.getUrl());
                 if (downloadListener != null) {
                     downloadListener.onCheckFailed(di.getName() + "文件大小与服务器不符");
                 }
             }
             public void onCreateFailed(){
+                logger.error("{} create tmp file failed", di.getName());
                 if (downloadListener != null) {
                     downloadListener.onCreateFailed("创建临时文件失败");
                 }
@@ -188,14 +187,15 @@ public class Downloader {
         //检查是否已下载完成
         File file = new File(di.getPath());
         if (file.exists() && file.isFile()) {
+            logger.debug("{} is downloaded", di.getName());
             di.setStateAndRefresh(DownloadOrder.STATE_SUCCESS);
             DownloadList.add(context, downloader);
             throw new DownloadRepeatException("已经下载过了");
         }
         //检查是否已经在任务列表中
         if (DownloadList.has(di.getId()) && downloaderIsUsable(DownloadList.get(di.getId()))) {
-                Log.d("download", di.getName() + " is downloading");
-                throw new DownloadRepeatException("已经在任务列表中");
+            logger.debug("{} is downloading", di.getName());
+            throw new DownloadRepeatException("已经在任务列表中");
         }
         DownloadList.add(context, downloader);
         di.setStateAndRefresh(DownloadOrder.STATE_WAIT);

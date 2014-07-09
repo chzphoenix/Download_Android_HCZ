@@ -6,7 +6,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
 import android.os.StatFs;
-import android.util.Log;
 
 import java.io.*;
 import java.net.HttpURLConnection;

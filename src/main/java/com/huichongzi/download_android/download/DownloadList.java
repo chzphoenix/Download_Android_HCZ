@@ -1,7 +1,9 @@
 package com.huichongzi.download_android.download;
 
 import android.content.Context;
-import android.util.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -11,6 +13,7 @@ import java.util.Iterator;
  * Created by cuihz on 2014/7/4.
  */
 class DownloadList {
+    private static final Logger logger = LoggerFactory.getLogger(DownloadList.class);
     // 最大允许启动下载的个数
     protected static final int Max_Allow_Download = 3;
     // 当前下载的存储表
@@ -66,7 +69,7 @@ class DownloadList {
             }
             DownloadDB.update(down.di);
         }
-        Log.i("DownList", "目前下载数" + count);
+        logger.debug("download task count: {}", count);
         //当存在下载任务，添加广播；否则移除广播
         if(context == null){
             return;

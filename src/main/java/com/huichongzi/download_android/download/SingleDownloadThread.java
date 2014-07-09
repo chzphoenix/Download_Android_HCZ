@@ -10,7 +10,9 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 
 import android.content.Context;
-import android.util.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * 单个线程下载类
@@ -18,7 +20,7 @@ import android.util.Log;
  * Created by cuihz on 2014/7/3.
  */
 class SingleDownloadThread extends Thread {
-
+    private static final Logger logger = LoggerFactory.getLogger(Downloader.class);
     private static final int BUFFER_SIZE = 1024 * 10;
     private DownloadInfo di;
     //线程id，用来区分多线程中的每个线程
@@ -74,7 +76,7 @@ class SingleDownloadThread extends Thread {
             InputStream is = con.getInputStream();
             bis = new BufferedInputStream(is);
 
-            Log.d(toString(), curPosition + "," + endPosition);
+            logger.debug("{} thread {} -> {} , {}", di.getName(), threadId, curPosition, endPosition);
             // 开始循环以流的形式读写文件
             while (curPosition < endPosition && di.getState() == DownloadOrder.STATE_DOWNING) {
                 try {
@@ -92,17 +94,16 @@ class SingleDownloadThread extends Thread {
                     }
                     Thread.sleep(Sleep_Time);
                 } catch (InterruptedException e) {
-                    Log.e("SingleDownloadThread run",
-                            "download Interrupt error:" + e.getMessage());
+                    logger.error("{} thread {} -> download Interrupt error:{}", di.getName(), threadId, e.getMessage());
                     di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
                     downloadListener.onDownloadFailed();
                 }
             }
-            Log.i(toString(), "Total downloadsize: " + downloadSize);
+            logger.info("{} thread {} -> Total downloadsize: {}", di.getName(), threadId, downloadSize);
             bis.close();
             fos.close();
         } catch (SocketTimeoutException e) {
-            Log.e("SingleDownloadThread run", "download SocketTimeoutException ");
+            logger.error("{} thread {} -> download SocketTimeoutException:{}", di.getName(), threadId, e.getMessage());
             di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
             downloadListener.onDownloadFailed();
         } catch (IOException e) {
@@ -110,12 +111,12 @@ class SingleDownloadThread extends Thread {
                 DownloadList.waitAll();
             }
             else{
-                Log.e("SingleDownloadThread run", "download IOException " + e.getMessage());
+                logger.error("{} thread {} -> download IOException:{}", di.getName(), threadId, e.getMessage());
                 di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
                 downloadListener.onDownloadFailed();
             }
         } catch (Exception e) {
-            Log.e("SingleDownloadThread run", "download error " + e.getMessage());
+            logger.error("{} thread {} -> download error:{}", di.getName(), threadId, e.getMessage());
             di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
             downloadListener.onDownloadFailed();
         }

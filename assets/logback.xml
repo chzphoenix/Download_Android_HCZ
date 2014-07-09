@@ -1,0 +1,127 @@
+<!--
+    Level DEBUG
+    DEBUG Level指出细粒度信息事件对调试应用程序是非常有帮助的。
+
+    Level INFO
+    INFO level表明 消息在粗粒度级别上突出强调应用程序的运行过程。
+
+    Level WARN
+    WARN level表明会出现潜在错误的情形。
+
+    Level ERROR
+    ERROR level指出虽然发生错误事件，但仍然不影响系统的继续运行。
+
+    Level FATAL
+    FATAL level指出每个严重的错误事件将会导致应用程序的退出。
+
+    另外，还有两个可用的特别的日志记录级别:
+    Level ALL
+    ALL Level是最低等级的，用于打开所有日志记录。
+
+    Level OFF
+    OFF Level是最高等级的，用于关闭所有日志记录。
+
+    优先级从高到低分别是 ERROR、WARN、INFO、DEBUG。
+    通过在这里定义的级别，可以控制到应用程序中相应级别的日志信息的开关。
+    比如在这里定义了INFO级别，则应用程序中所有DEBUG级别的日志信息将不被打印出来。
+    程序会打印高于或等于所设置级别的日志，设置的日志等级越高，打印出来的日志就越少。
+    如果设置级别为INFO，则优先级高于等于INFO级别（如：INFO、 WARN、ERROR）的日志信息将可以被输出,小于该级别的如DEBUG将不会被输出。
+
+    所有log的使用方式：类实现ILogger，代码中运行log.debug("I love {},{},{}","luobo","baicai",123456);
+-->
+<configuration>
+    <!-- 配置存储日志文件路径-->
+    <property name="LOG_DIR" value="/data/data/com.ifeng.video.core/files"/>
+
+    <!-- Create a logcat appender  logcat打印日志配置信息-->
+    <appender name="logcat" class="ch.qos.logback.classic.android.LogcatAppender">
+        <encoder>
+            <!-- l设置ogcat打印日志的格式-->
+            <pattern>%msg</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Create a file appender for DEBUG-level messages   文件打印日志配置信息-->
+    <appender name="file" class="ch.qos.logback.core.FileAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <!-- 文件打印日志的路径-->
+        <file>${LOG_DIR}/debug.log</file>
+        <encoder>
+            <!-- 设置文件打印日志的格式-->
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 下面是对特定的包名打印设定级别日志信息   要有把注释打开，再配置好相应的信息-->
+    <!--Write TRACE messages from class A to its own log -->
+    <!--<logger name="com.example.A" level="TRACE">-->
+    <!--<appender-ref ref="TraceLog" />-->
+    <!--</logger>-->
+
+    <!-- 设置root的打印级别和输出端-->
+    <root level="DEBUG">
+        <appender-ref ref="logcat"/>
+    </root>
+</configuration>
+
+<!--以下是打印日志格式各个符号的意义，根据以下的信息设置需要的格式
+    c {length }
+    lo {length }
+    logger {length }	输出日志的logger名，可有一个整形参数，功能是缩短logger名，设置为0表示只输入logger最右边点符号之后的字符串。
+    %logger	    mainPackage.sub.sample.Bar	mainPackage.sub.sample.Bar
+    %logger{0}	mainPackage.sub.sample.Bar	Bar
+    %logger{5}	mainPackage.sub.sample.Bar	m.s.s.Bar
+    %logger{10}	mainPackage.sub.sample.Bar	m.s.s.Bar
+    %logger{15}	mainPackage.sub.sample.Bar	m.s.sample.Bar
+    logger{16}	mainPackage.sub.sample.Bar	m.sub.sample.Bar
+    %logger{26}	mainPackage.sub.sample.Bar	mainPackage.sub.sample.Bar
+
+    C {length }
+    class {length }	输出执行记录请求的调用者的全限定名。参数与上面的一样。尽量避免使用，除非执行速度不造成任何问题。
+
+    d {pattern }
+    date {pattern }	输出日志的打印日志，模式语法与java.text.SimpleDateFormat 兼容。
+    %d	2006-10-20 14:06:49,812
+    %date	2006-10-20 14:06:49,812
+    %date{ISO8601}	2006-10-20 14:06:49,812
+    %date{HH:mm:ss.SSS}	14:06:49.812
+    %date{dd MMM yyyy ;HH:mm:ss.SSS}	20 oct. 2006;14:06:49.812
+
+    F / file	输出执行记录请求的java源文件名。尽量避免使用，除非执行速度不造成任何问题。
+
+    caller{depth} caller{depth, evaluator-1, ... evaluator-n}	输出生成日志的调用者的位置信息，整数选项表示输出信息深度。
+    例如， %caller{2}   输出为：
+    0    [main] DEBUG - logging statement
+    Caller+0   at mainPackage.sub.sample.Bar.sampleMethodName(Bar.java:22)
+    Caller+1   at mainPackage.sub.sample.Bar.createLoggingRequest(Bar.java:17)
+    例如， %caller{3}   输出为：
+    16   [main] DEBUG - logging statement
+    Caller+0   at mainPackage.sub.sample.Bar.sampleMethodName(Bar.java:22)
+    Caller+1   at mainPackage.sub.sample.Bar.createLoggingRequest(Bar.java:17)
+    Caller+2   at mainPackage.ConfigTester.main(ConfigTester.java:38)
+
+    L / line	输出执行日志请求的行号。尽量避免使用，除非执行速度不造成任何问题。
+
+    m / msg / message
+    输出应用程序提供的信息。
+    M / method	输出执行日志请求的方法名。尽量避免使用，除非执行速度不造成任何问题。
+
+    n	输出平台先关的分行符“\n”或者“\r\n”。
+
+    p / le / level	输出日志级别。
+
+    r / relative	输出从程序启动到创建日志记录的时间，单位是毫秒
+
+    t / thread	输出产生日志的线程名。
+
+    replace(p ){r, t}
+
+    p 为日志内容，r 是正则表达式，将p 中符合r 的内容替换为t 。
+
+    例如， "%replace(%msg){'\s', ''}"
+-->
+
