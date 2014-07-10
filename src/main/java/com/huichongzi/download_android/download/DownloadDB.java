@@ -6,7 +6,7 @@ import java.util.List;
  * 下载数据库类，用于保存及获取下载列表信息
  * Created by cuihz on 2014/7/7.
  */
-public class DownloadDB {
+class DownloadDB {
 
     protected static DownloadInfo getById(String id){
         return null;
@@ -16,7 +16,7 @@ public class DownloadDB {
 
     }
 
-    protected static void delete(String id){
+    protected static void delete(int id){
 
     }
 

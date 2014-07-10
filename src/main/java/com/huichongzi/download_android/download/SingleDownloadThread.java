@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  * Created by cuihz on 2014/7/3.
  */
 class SingleDownloadThread extends Thread {
-    private static final Logger logger = LoggerFactory.getLogger(Downloader.class);
+    private static final Logger logger = LoggerFactory.getLogger(SingleDownloadThread.class);
     private static final int BUFFER_SIZE = 1024 * 10;
     private DownloadInfo di;
     //线程id，用来区分多线程中的每个线程
@@ -96,7 +96,9 @@ class SingleDownloadThread extends Thread {
                 } catch (InterruptedException e) {
                     logger.error("{} thread {} -> download Interrupt error:{}", di.getName(), threadId, e.getMessage());
                     di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-                    downloadListener.onDownloadFailed();
+                    if(downloadListener != null){
+                        downloadListener.onDownloadFailed(e.getMessage());
+                    }
                 }
             }
             logger.info("{} thread {} -> Total downloadsize: {}", di.getName(), threadId, downloadSize);
@@ -105,7 +107,9 @@ class SingleDownloadThread extends Thread {
         } catch (SocketTimeoutException e) {
             logger.error("{} thread {} -> download SocketTimeoutException:{}", di.getName(), threadId, e.getMessage());
             di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            downloadListener.onDownloadFailed();
+            if(downloadListener != null){
+                downloadListener.onDownloadFailed(e.getMessage());
+            }
         } catch (IOException e) {
             if(context != null && (!DownloadUtils.isNetAlive(context) || !DownloadUtils.isSdcardMount())){
                 DownloadList.waitAll();
@@ -113,12 +117,16 @@ class SingleDownloadThread extends Thread {
             else{
                 logger.error("{} thread {} -> download IOException:{}", di.getName(), threadId, e.getMessage());
                 di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-                downloadListener.onDownloadFailed();
+                if(downloadListener != null){
+                    downloadListener.onDownloadFailed(e.getMessage());
+                }
             }
         } catch (Exception e) {
             logger.error("{} thread {} -> download error:{}", di.getName(), threadId, e.getMessage());
             di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            downloadListener.onDownloadFailed();
+            if(downloadListener != null){
+                downloadListener.onDownloadFailed(e.getMessage());
+            }
         }
     }
 

@@ -5,8 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import java.io.File;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * 下载列表类
@@ -17,22 +19,38 @@ class DownloadList {
     // 最大允许启动下载的个数
     protected static final int Max_Allow_Download = 3;
     // 当前下载的存储表
-    protected static Hashtable<String, Downloader> downloadMap = new Hashtable<String, Downloader>();
-    private static Context context;
+    protected static Hashtable<Integer, Downloader> downloadMap = new Hashtable<Integer, Downloader>();
 
 
-    protected static void add(Context mContext, Downloader down){
-        context = mContext;
+    protected static void add(Downloader down){
         downloadMap.put(down.di.getId(), down);
         DownloadDB.add(down.di);
-        refresh();
     }
 
-    protected static boolean has(String id){
-        return downloadMap.containsKey(id);
+    protected static boolean has(int id){
+        if(downloadMap.containsKey(id)){
+            Downloader down = DownloadList.get(id);
+            //清除无效的部分
+            if(down == null || down.di == null || down.di.getState() == DownloadOrder.STATE_STOP){
+                downloadMap.remove(id);
+                return false;
+            }
+            //清除文件被删除的无效di
+            if(down.di.getState() == DownloadOrder.STATE_SUCCESS){
+                File file = new File(down.di.getPath());
+                if(!file.exists() || !file.isFile()){
+                    downloadMap.remove(id);
+                    return false;
+                }
+            }
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 
-    protected static void remove(String id){
+    protected static void remove(int id){
         if(downloadMap.contains(id)){
             Downloader down = downloadMap.get(id);
             if(down != null && down.di != null){
@@ -44,12 +62,24 @@ class DownloadList {
         refresh();
     }
 
-    protected static Downloader get(String id){
+    protected static Downloader get(int id){
         return downloadMap.get(id);
     }
 
-    protected static int getSize(){
-        return downloadMap.size();
+
+    protected static List<DownloadInfo> getDownloadList(String group, boolean isDowned) {
+        List<DownloadInfo> list = DownloadDB.getList(group, isDowned);
+        if(isDowned){
+            //如果是下载完成的，需要检查文件是否已被删除
+            for(DownloadInfo di : list){
+                File file = new File(di.getPath());
+                if(!file.exists() || !file.isFile()){
+                    list.remove(di);
+                    DownloadDB.delete(di.getId());
+                }
+            }
+        }
+        return list;
     }
 
 
@@ -65,21 +95,12 @@ class DownloadList {
             }
             else if(count < Max_Allow_Download && down.di.getState() == DownloadOrder.STATE_WAIT){
                 down.tryStorage();
+                down.di.setState(DownloadOrder.STATE_DOWNING);
                 count++;
             }
             DownloadDB.update(down.di);
         }
         logger.debug("download task count: {}", count);
-        //当存在下载任务，添加广播；否则移除广播
-        if(context == null){
-            return;
-        }
-        if(count <= 0){
-            DownloadReceiver.removeReceiver(context);
-        }
-        else{
-            DownloadReceiver.addReceiver(context);
-        }
     }
 
 

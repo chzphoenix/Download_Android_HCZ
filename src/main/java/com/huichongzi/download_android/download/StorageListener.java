@@ -44,7 +44,7 @@ interface StorageListener {
 	 * 下载地址连接错误
 	 * @param msg 错误信息
 	 */
-	void onDownloadPathConnectError(String msg);
+	void onDownloadUrlConnectError(String msg);
 
     /**
      * 下载前校验文件大小失败
@@ -54,5 +54,5 @@ interface StorageListener {
     /**
      * 创建下载文件失败
      */
-    void onCreateFailed();
+    void onCreateFailed(String msg);
 }

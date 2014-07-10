@@ -52,7 +52,7 @@ class DownloadUtils {
      * @param di 下载文件信息
      * @return
      */
-    protected static void createTmpFile(DownloadInfo di) throws Exception{
+    protected static void createTmpFile(DownloadInfo di) throws IOException{
         File file = new File(di.getPath() + StorageHandleTask.Unfinished_Sign);
         // 创建下载目录
         if (!file.exists()) {

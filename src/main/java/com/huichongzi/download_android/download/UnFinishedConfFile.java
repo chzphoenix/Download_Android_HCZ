@@ -1,5 +1,8 @@
 package com.huichongzi.download_android.download;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.nio.channels.FileLock;
 import java.util.*;
@@ -9,7 +12,7 @@ import java.util.*;
  * Created by cuihz on 2014/7/3.
  */
 class UnFinishedConfFile {
-	
+    private static final Logger logger = LoggerFactory.getLogger(UnFinishedConfFile.class);
 	private Map<String, String> conf = new HashMap<String, String>();
 	private File file;
     //配置文件的分隔符
@@ -37,7 +40,7 @@ class UnFinishedConfFile {
 				conf.put(value[0], value[1]);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+            logger.error("下载配置文件出错: {}", e.getMessage());
 		}
 	}
 
@@ -55,7 +58,7 @@ class UnFinishedConfFile {
 			}
 			return true;
 		} catch (Exception e) {
-			e.printStackTrace();
+            logger.error("下载配置文件出错: {}", e.getMessage());
 			return true;
 		}
 		
@@ -83,7 +86,7 @@ class UnFinishedConfFile {
 			fw.write(sb.toString());
 			fw.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+            logger.error("下载配置文件出错: {}", e.getMessage());
 		}
 		
 	}

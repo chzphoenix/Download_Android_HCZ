@@ -1,29 +1,33 @@
 package com.huichongzi.download_android.download;
 
+import java.io.Serializable;
+
 /**
  * 下载信息bean类
  * Created by cuihz on 2014/7/3.
  */
-public class DownloadInfo {
+public class DownloadInfo implements Serializable{
 
-    private String id;
+    private int id;
 	private String name;
     private String home;
     private String type;
 	private String url;
 	private String md5;
 	private long size;
-    private int group;
+    private String group;
     private int mode;
     private int state;
     private String other;
+
+
 
 
     /**
      * 获取下载唯一标示
      * @return
      */
-    public String getId() {
+    public int getId() {
         return id;
     }
 
@@ -31,7 +35,7 @@ public class DownloadInfo {
      * 设置下载唯一标示
      * @param id
      */
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -154,15 +158,15 @@ public class DownloadInfo {
      * 获取下载组，用于进行批量暂停等操作。
      * @return
      */
-    public int getGroup() {
+    public String getGroup() {
         return group;
     }
 
     /**
-     * 设置下载组，用于进行批量暂停等操作。如想新建一个下载组，则调用Downloader.getNewGroup()来获取一个新的不重复下载组id，在调用此方法。
+     * 设置下载组，用于进行批量暂停等操作。
      * @param group
      */
-    public void setGroup(int group) {
+    public void setGroup(String group) {
         this.group = group;
     }
 
@@ -204,7 +208,7 @@ public class DownloadInfo {
      * 设置完成刷新一下下载列表。如下载成功后让下一个等待的任务开始执行
      * @param state
      */
-    public void setStateAndRefresh(int state) {
+    protected void setStateAndRefresh(int state) {
         this.state = state;
         DownloadList.refresh();
     }
@@ -228,6 +232,9 @@ public class DownloadInfo {
         this.other = other;
     }
 
+
+
+
     @Override
     public String toString() {
         return "DownloadInfo{" +
@@ -248,9 +255,35 @@ public class DownloadInfo {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DownloadInfo that = (DownloadInfo) o;
-        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (id != that.id) return false;
         return true;
     }
 
+    @Override
+    public int hashCode() {
+        return id;
+    }
+
+    /**
+     * 检查此bean信息是否有异常
+     * @throws IllegalParamsException
+     */
+    public void checkIllegal() throws IllegalParamsException{
+        if(id <= 0){
+            throw new IllegalParamsException("id", "不能为负或0");
+        }
+        if(home == null || home.equals("")){
+            throw new IllegalParamsException("home", "不能为空");
+        }
+        if(url == null || url.equals("")){
+            throw new IllegalParamsException("url", "不能为空");
+        }
+        if((mode & DownloadOrder.MODE_SIZE_START) == 1 && size <= 0){
+            throw new IllegalParamsException("mode", "下载前校验文件大小必须提前设置文件大小");
+        }
+        if((mode & DownloadOrder.MODE_MD5_END) == 1 && (md5 == null || md5.equals(""))){
+            throw new IllegalParamsException("mode", "校验文件MD5必须提前设置MD5");
+        }
+    }
 
 }

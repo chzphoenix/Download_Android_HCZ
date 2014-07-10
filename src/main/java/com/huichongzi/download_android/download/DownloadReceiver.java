@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  * 下载广播接收类
  * Created by cuihz on 2014/7/7.
  */
-public class DownloadReceiver extends BroadcastReceiver{
+class DownloadReceiver extends BroadcastReceiver{
     private static final Logger logger = LoggerFactory.getLogger(DownloadReceiver.class);
     private static DownloadReceiver downloadReceiver;
     private boolean isSdcardMounted = true;
@@ -42,7 +42,7 @@ public class DownloadReceiver extends BroadcastReceiver{
                 }
             }
             else{
-                logger.debug("sdcard unconnected");
+                logger.debug("net unconnected");
                 DownloadList.waitAll();
                 isNetAlive = false;
             }
