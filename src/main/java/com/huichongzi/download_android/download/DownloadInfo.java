@@ -18,6 +18,8 @@ public class DownloadInfo implements Serializable{
     private String group;
     private int mode;
     private int state;
+    private long speed;
+    private int process;
     private String other;
 
 
@@ -215,6 +217,38 @@ public class DownloadInfo implements Serializable{
 
 
     /**
+     * 获取上次保存的下载速度
+     * @return
+     */
+    public long getSpeed() {
+        return speed;
+    }
+
+    /**
+     * 设置下载速度
+     * @param speed
+     */
+    protected void setSpeed(long speed) {
+        this.speed = speed;
+    }
+
+    /**
+     * 获取上次保存的下载进度，100为满值
+     * @return
+     */
+    public int getProcess() {
+        return process;
+    }
+
+    /**
+     * 设置下载进度
+     * @param process
+     */
+    protected void setProcess(int process) {
+        this.process = process;
+    }
+
+    /**
      * 获取扩展信息
      * @return
      */
@@ -241,11 +275,11 @@ public class DownloadInfo implements Serializable{
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", home='" + home + '\'' +
-                ", type='" + type + '\'' +
+                ", type='" + type == null ? "" : type + '\'' +
                 ", url='" + url + '\'' +
-                ", md5='" + md5 + '\'' +
+                ", md5='" + md5 == null ? "" : md5 + '\'' +
                 ", size=" + size +
-                ", other='" + other + '\'' +
+                ", other='" + other == null ? "" : other + '\'' +
                 '}';
     }
 

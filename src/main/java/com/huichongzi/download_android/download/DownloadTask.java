@@ -116,13 +116,16 @@ class DownloadTask extends Thread {
             //循环监视各个子线程。
             while (di.getState() == DownloadOrder.STATE_DOWNING) {
                 // 先把整除的余数搞定
-                downloadedSize = downloadSizeMore;
+                long downloadedSize = downloadSizeMore;
                 for (int i = 0; i < fds.length; i++) {
                     downloadedSize += fds[i].getDownloadSize();
                     //为每个线程记录下载信息
                     fds[i].saveProgress(unFinishConf);
                 }
                 int progress = (int) ((downloadedSize * 1.0 + alreadyDownloadSize) / fileSize * 100);
+                di.setProcess(progress);
+                di.setSpeed(downloadedSize - this.downloadedSize);
+                this.downloadedSize = downloadedSize;
                 if (downloadListener != null) {
                     downloadListener.onDownloadProgressChanged(progress);
                 }
