@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Downloader {
     private DownloaderListener downloadListener = null;
+    protected static DownServiceListener serviceListener= null;
     protected DownloadInfo di;
     private Context context;
     private static final Logger logger = LoggerFactory.getLogger(Downloader.class);
@@ -68,28 +69,28 @@ public class Downloader {
                 logger.error("{} sdcard not mounted", di.getName());
                 String msg = "sd卡不存在";
                 if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadOrder.FAILED_STORAGE_NOT_ENOUPH, msg);
+                    downloadListener.onProFailed(DownloadOrder.FAILED_SDCARD_UNMOUNT, msg);
                 }
             }
 
             public void onDownloadUrlConnectError(String msg) {
                 logger.error("{} not connect to {}", di.getName(), di.getUrl());
                 if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadOrder.FAILED_STORAGE_NOT_ENOUPH, msg);
+                    downloadListener.onProFailed(DownloadOrder.FAILED_URL_UNCONNECT, msg);
                 }
             }
 
             public void onFileSizeError() {
                 logger.error("{} file size is diff of {}", di.getName(), di.getUrl());
                 if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadOrder.FAILED_STORAGE_NOT_ENOUPH, "文件大小与服务器不符");
+                    downloadListener.onProFailed(DownloadOrder.FAILED_SIZE_ERROR, "文件大小与服务器不符");
                 }
             }
 
             public void onCreateFailed(String msg) {
                 logger.error("{} create tmp file failed", di.getName());
                 if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadOrder.FAILED_STORAGE_NOT_ENOUPH, msg);
+                    downloadListener.onProFailed(DownloadOrder.FAILED_CREATE_TMPFILE, msg);
                 }
             }
         });
@@ -109,14 +110,7 @@ public class Downloader {
     }
 
 
-    /**
-     * 取消下载
-     * 删除文件
-     */
-    protected void stopDownload() {
-        di.setStateAndRefresh(DownloadOrder.STATE_STOP);
-        DownloadUtils.removeFile(di.getPath());
-    }
+
 
 
     /**
@@ -125,8 +119,15 @@ public class Downloader {
      * @param context
      * @param id      下载唯一id
      * @throws DownloadNotExistException 下载任务不存在或id不正确
+     * @throws IllegalParamsException di参数不合法
      */
-    public static void pauseDownload(Context context, int id) throws DownloadNotExistException {
+    public static void pauseDownload(Context context, int id) throws DownloadNotExistException, IllegalParamsException {
+        if(context == null){
+            throw new IllegalParamsException("context", "不能为空");
+        }
+        if(id <= 0){
+            throw new IllegalParamsException("id", "不能为负或0");
+        }
         if (DownloadList.has(id)) {
             Intent intent = new Intent(context, DownloadService.class);
             intent.putExtra("action", DownloadOrder.ACTION_PAUSE);
@@ -139,13 +140,62 @@ public class Downloader {
 
 
     /**
+     * 批量暂停下载，根据id列表
+     *
+     * @param context
+     * @param ids
+     * @throws IllegalParamsException di参数不合法
+     */
+    public static void pauseDownloadForIds(Context context, List<Integer> ids) throws IllegalParamsException {
+        if(context == null){
+            throw new IllegalParamsException("context", "不能为空");
+        }
+        if(ids == null || ids.size() <= 0){
+            throw new IllegalParamsException("ids", "不能为空");
+        }
+            Intent intent = new Intent(context, DownloadService.class);
+            intent.putExtra("action", DownloadOrder.ACTION_PAUSE_IDS);
+            intent.putExtra("ids", ids.toArray());
+            context.startService(intent);
+    }
+
+
+    /**
+     * 批量暂停下载，根据组
+     *
+     * @param context
+     * @param group
+     * @throws IllegalParamsException di参数不合法
+     */
+    public static void pauseDownloadForGroup(Context context, String group) throws IllegalParamsException {
+        if(context == null){
+            throw new IllegalParamsException("context", "不能为空");
+        }
+        if(group == null || group.equals("")){
+            throw new IllegalParamsException("group", "不能为空");
+        }
+        Intent intent = new Intent(context, DownloadService.class);
+        intent.putExtra("action", DownloadOrder.ACTION_PAUSE_GROUP);
+        intent.putExtra("group", group);
+        context.startService(intent);
+    }
+
+
+    /**
      * 恢复下载
      *
      * @param context
      * @param id      下载唯一id
      * @throws DownloadNotExistException 下载任务不存在或id不正确
+     * @throws IllegalParamsException di参数不合法
      */
-    public static void resumeDownload(Context context, int id) throws DownloadNotExistException {
+    public static void resumeDownload(Context context, int id) throws DownloadNotExistException, IllegalParamsException {
+        if(context == null){
+            throw new IllegalParamsException("context", "不能为空");
+        }
+        if(id <= 0){
+            throw new IllegalParamsException("id", "不能为负或0");
+        }
         if (DownloadList.has(id)) {
             Intent intent = new Intent(context, DownloadService.class);
             intent.putExtra("action", DownloadOrder.ACTION_RESUME);
@@ -158,13 +208,61 @@ public class Downloader {
 
 
     /**
+     * 批量恢复下载，根据id列表
+     *
+     * @param context
+     * @param ids
+     * @throws IllegalParamsException di参数不合法
+     */
+    public static void resumeDownloadForIds(Context context, List<Integer> ids) throws IllegalParamsException {
+        if(context == null){
+            throw new IllegalParamsException("context", "不能为空");
+        }
+        if(ids == null || ids.size() <= 0){
+            throw new IllegalParamsException("ids", "不能为空");
+        }
+        Intent intent = new Intent(context, DownloadService.class);
+        intent.putExtra("action", DownloadOrder.ACTION_RESUME_IDS);
+        intent.putExtra("ids", ids.toArray());
+        context.startService(intent);
+    }
+
+    /**
+     * 批量恢复下载，根据组
+     *
+     * @param context
+     * @param group
+     * @throws IllegalParamsException di参数不合法
+     */
+    public static void resumeDownloadForGroup(Context context, String group) throws IllegalParamsException {
+        if(context == null){
+            throw new IllegalParamsException("context", "不能为空");
+        }
+        if(group == null || group.equals("")){
+            throw new IllegalParamsException("group", "不能为空");
+        }
+        Intent intent = new Intent(context, DownloadService.class);
+        intent.putExtra("action", DownloadOrder.ACTION_RESUME_GROUP);
+        intent.putExtra("group", group);
+        context.startService(intent);
+    }
+
+
+    /**
      * 取消下载/删除已下载文件
      *
      * @param context
      * @param id
      * @throws DownloadNotExistException 下载任务不存在或id不正确
+     * @throws IllegalParamsException di参数不合法
      */
-    public static void cancelDownload(Context context, int id) throws DownloadNotExistException {
+    public static void cancelDownload(Context context, int id) throws DownloadNotExistException, IllegalParamsException {
+        if(context == null){
+            throw new IllegalParamsException("context", "不能为空");
+        }
+        if(id <= 0){
+            throw new IllegalParamsException("id", "不能为负或0");
+        }
         if (DownloadList.has(id)) {
             Intent intent = new Intent(context, DownloadService.class);
             intent.putExtra("action", DownloadOrder.ACTION_CANCEL);
@@ -173,6 +271,50 @@ public class Downloader {
         } else {
             throw new DownloadNotExistException();
         }
+    }
+
+
+    /**
+     * 批量取消/删除下载，根据id列表
+     *
+     * @param context
+     * @param ids
+     * @throws IllegalParamsException di参数不合法
+     */
+    public static void cancelDownloadForIds(Context context, List<Integer> ids) throws IllegalParamsException {
+        if(context == null){
+            throw new IllegalParamsException("context", "不能为空");
+        }
+        if(ids == null || ids.size() <= 0){
+            throw new IllegalParamsException("ids", "不能为空");
+        }
+        Intent intent = new Intent(context, DownloadService.class);
+        intent.putExtra("action", DownloadOrder.ACTION_CANCEL_IDS);
+        intent.putExtra("ids", ids.toArray(new Integer[ids.size()]));
+        context.startService(intent);
+    }
+
+
+    /**
+     * 批量取消/删除下载，根据组和是否已完成
+     *
+     * @param context
+     * @param group
+     * @param isDowned
+     * @throws IllegalParamsException di参数不合法
+     */
+    public static void cancelDownloadForGroup(Context context, String group, boolean isDowned) throws IllegalParamsException {
+        if(context == null){
+            throw new IllegalParamsException("context", "不能为空");
+        }
+        if(group == null || group.equals("")){
+            throw new IllegalParamsException("group", "不能为空");
+        }
+        Intent intent = new Intent(context, DownloadService.class);
+        intent.putExtra("action", DownloadOrder.ACTION_CANCEL_GROUP);
+        intent.putExtra("group", group);
+        intent.putExtra("isDowned", isDowned ? DownloadOrder.STATE_SUCCESS : 0);
+        context.startService(intent);
     }
 
 
@@ -202,12 +344,24 @@ public class Downloader {
         if (DownloadList.has(di.getId())) {
             throw new IllegalParamsException("di", "任务已经存在");
         }
+        if(context == null){
+            throw new IllegalParamsException("context", "不能为空");
+        }
         Downloader down = new Downloader(di, listener);
         DownloadList.add(down);
         Intent intent = new Intent(context, DownloadService.class);
         intent.putExtra("action", DownloadOrder.ACTION_ADD);
         intent.putExtra("id", di.getId());
         context.startService(intent);
+    }
+
+    /**
+     * 停止后台的下载服务
+     * @param context
+     */
+    public static void stopDownService(Context context){
+        Intent intent = new Intent(context, DownloadService.class);
+        context.stopService(intent);
     }
 
 
@@ -224,6 +378,14 @@ public class Downloader {
         } else {
             throw new DownloadNotExistException();
         }
+    }
+
+    /**
+     * 监听下载的后台服务
+     * @param listener
+     */
+    public static void setDownServiceListener(DownServiceListener listener){
+        serviceListener = listener;
     }
 
 

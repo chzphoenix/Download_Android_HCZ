@@ -16,11 +16,14 @@ public class DownloadInfo implements Serializable{
 	private String md5;
 	private long size;
     private String group;
-    private int mode;
+    private int checkMode;
+    private int reconnMode;
     private int state;
-    private long speed;
+    private boolean unlimite;
     private int process;
     private String other;
+
+    private long speed;
 
 
 
@@ -176,16 +179,33 @@ public class DownloadInfo implements Serializable{
      * 获取校验模式，具体见DownloadOrder类
      * @return
      */
-    public int getMode() {
-        return mode;
+    public int getCheckMode() {
+        return checkMode;
     }
 
     /**
      * 设置校验模式，具体见DownloadOrder类
-     * @param mode
+     * @param checkMode
      */
-    public void setMode(int mode) {
-        this.mode = mode;
+    public void setCheckMode(int checkMode) {
+        this.checkMode = checkMode;
+    }
+
+
+    /**
+     * 获取重连模式，具体见DownloadOrder类
+     * @return
+     */
+    public int getReconnMode() {
+        return reconnMode;
+    }
+
+    /**
+     * 设置重连模式，具体见DownloadOrder类
+     * @param reconnMode
+     */
+    public void setReconnMode(int reconnMode) {
+        this.reconnMode = reconnMode;
     }
 
     /**
@@ -212,7 +232,7 @@ public class DownloadInfo implements Serializable{
      */
     protected void setStateAndRefresh(int state) {
         this.state = state;
-        DownloadList.refresh();
+        DownloadList.refresh(0);
     }
 
 
@@ -266,8 +286,22 @@ public class DownloadInfo implements Serializable{
         this.other = other;
     }
 
+    /**
+     * 下载是否受限
+     * @return
+     */
+    public boolean isUnlimite() {
+        return unlimite;
+    }
 
 
+    /**
+     * 设置下载是否受限。为false则受最大下载数限制；否则单独计算，不记入下载数
+     * @param unlimite
+     */
+    public void setUnlimite(boolean unlimite) {
+        this.unlimite = unlimite;
+    }
 
     @Override
     public String toString() {
@@ -312,11 +346,11 @@ public class DownloadInfo implements Serializable{
         if(url == null || url.equals("")){
             throw new IllegalParamsException("url", "不能为空");
         }
-        if((mode & DownloadOrder.MODE_SIZE_START) == 1 && size <= 0){
-            throw new IllegalParamsException("mode", "下载前校验文件大小必须提前设置文件大小");
+        if((checkMode & DownloadOrder.CHECKMODE_SIZE_START) == 1 && size <= 0){
+            throw new IllegalParamsException("checkMode", "下载前校验文件大小必须提前设置文件大小");
         }
-        if((mode & DownloadOrder.MODE_MD5_END) == 1 && (md5 == null || md5.equals(""))){
-            throw new IllegalParamsException("mode", "校验文件MD5必须提前设置MD5");
+        if((checkMode & DownloadOrder.CHECKMODE_MD5_END) == 1 && (md5 == null || md5.equals(""))){
+            throw new IllegalParamsException("checkMode", "校验文件MD5必须提前设置MD5");
         }
     }
 

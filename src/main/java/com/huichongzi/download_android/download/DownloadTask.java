@@ -160,7 +160,7 @@ class DownloadTask extends Thread {
     private void downloadOver() {
         File downloadFile = new File(tmpPath);
         //验证md5
-        if ((di.getMode() & DownloadOrder.MODE_MD5_END) != 0 && !checkMd5(downloadFile)) {
+        if ((di.getCheckMode() & DownloadOrder.CHECKMODE_MD5_END) != 0 && !checkMd5(downloadFile)) {
             DownloadUtils.removeFile(di.getPath());
             di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
             if (downloadListener != null) {
@@ -169,7 +169,7 @@ class DownloadTask extends Thread {
             return;
         }
         //验证大小
-        if ((di.getMode() & DownloadOrder.MODE_SIZE_END) != 0 && downloadFile.length() != di.getSize()) {
+        if ((di.getCheckMode() & DownloadOrder.CHECKMODE_SIZE_END) != 0 && downloadFile.length() != di.getSize()) {
             DownloadUtils.removeFile(di.getPath());
             di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
             if (downloadListener != null) {

@@ -30,8 +30,7 @@
     所有log的使用方式：类实现ILogger，代码中运行log.debug("I love {},{},{}","luobo","baicai",123456);
 -->
 <configuration>
-    <!-- 配置存储日志文件路径-->
-    <property name="LOG_DIR" value="/data/data/com.ifeng.video.core/files"/>
+
 
     <!-- Create a logcat appender  logcat打印日志配置信息-->
     <appender name="logcat" class="ch.qos.logback.classic.android.LogcatAppender">
@@ -41,20 +40,7 @@
         </encoder>
     </appender>
 
-    <!-- Create a file appender for DEBUG-level messages   文件打印日志配置信息-->
-    <appender name="file" class="ch.qos.logback.core.FileAppender">
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <level>DEBUG</level>
-            <onMatch>ACCEPT</onMatch>
-            <onMismatch>DENY</onMismatch>
-        </filter>
-        <!-- 文件打印日志的路径-->
-        <file>${LOG_DIR}/debug.log</file>
-        <encoder>
-            <!-- 设置文件打印日志的格式-->
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
+
 
     <!-- 下面是对特定的包名打印设定级别日志信息   要有把注释打开，再配置好相应的信息-->
     <!--Write TRACE messages from class A to its own log -->

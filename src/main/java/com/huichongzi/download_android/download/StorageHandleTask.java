@@ -65,7 +65,7 @@ class StorageHandleTask extends Thread {
         //通过url获取文件大小，并与传入的downloadinfo中的文件大小比较
         try {
             softSize = DownloadUtils.getFileSize(di.getUrl());
-            if ((di.getMode() & DownloadOrder.MODE_SIZE_START) == 0) {
+            if ((di.getCheckMode() & DownloadOrder.CHECKMODE_SIZE_START) == 0) {
                 di.setSize(softSize);
             } else if (softSize != di.getSize() || di.getSize() <= 0) {
                 storageListener.onFileSizeError();

@@ -112,7 +112,7 @@ class SingleDownloadThread extends Thread {
             }
         } catch (IOException e) {
             if(context != null && (!DownloadUtils.isNetAlive(context) || !DownloadUtils.isSdcardMount())){
-                DownloadList.waitAll();
+                DownloadList.waitAllForReconn();
             }
             else{
                 logger.error("{} thread {} -> download IOException:{}", di.getName(), threadId, e.getMessage());

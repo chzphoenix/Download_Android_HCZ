@@ -1,6 +1,5 @@
 package com.huichongzi.download_android.download;
 
-import android.content.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,12 +58,14 @@ class DownloadList {
             downloadMap.remove(id);
         }
         DownloadDB.delete(id);
-        refresh();
+        refresh(0);
     }
 
     protected static Downloader get(int id){
         return downloadMap.get(id);
     }
+
+
 
 
     protected static List<DownloadInfo> getDownloadList(String group, boolean isDowned) {
@@ -85,18 +86,24 @@ class DownloadList {
 
     /**
      * 刷新下载列表，未到下载上限且有等待下载时自动下载
+     * @param mode 重连模式.如果不为0，则只启动该模式的重连任务
      */
-    protected static void refresh(){
+    protected static void refresh(int mode){
         int count = 0;
         for (Iterator<Downloader> iter = downloadMap.values().iterator(); iter.hasNext(); ) {
             Downloader down = iter.next();
-            if (down.di.getState() == DownloadOrder.STATE_DOWNING) {
+            if (down.di.getState() == DownloadOrder.STATE_DOWNING && !down.di.isUnlimite()) {
                 count++;
             }
-            else if(count < Max_Allow_Download && down.di.getState() == DownloadOrder.STATE_WAIT){
-                down.tryStorage();
-                down.di.setState(DownloadOrder.STATE_DOWNING);
-                count++;
+            else if(down.di.isUnlimite() || count < Max_Allow_Download){              //如果不受限直接继续，受限则检查最大下载
+                if(((down.di.getReconnMode() & mode) != 0 && down.di.getState() == DownloadOrder.STATE_WAIT_RECONN)   //断网或sd卡卸载重连情况
+                        || (mode == 0 && down.di.getState() == DownloadOrder.STATE_WAIT_DOWN)){                       //刷新列表的情况
+                    down.tryStorage();
+                    down.di.setState(DownloadOrder.STATE_DOWNING);
+                    if(!down.di.isUnlimite()){
+                        count++;
+                    }
+                }
             }
             DownloadDB.update(down.di);
         }
@@ -105,14 +112,14 @@ class DownloadList {
 
 
     /**
-     * 下载中的任务全部变为等待。
+     * 下载中的任务全部变为等待重连。
      * sd卡卸载、网络中断时
      */
-    protected static void waitAll(){
+    protected static void waitAllForReconn(){
         for (Iterator<Downloader> iter = downloadMap.values().iterator(); iter.hasNext(); ) {
             Downloader down = iter.next();
             if (down.di.getState() == DownloadOrder.STATE_DOWNING) {
-                down.di.setState(DownloadOrder.STATE_WAIT);
+                down.di.setState(DownloadOrder.STATE_WAIT_RECONN);
             }
         }
     }

@@ -23,13 +23,13 @@ class DownloadReceiver extends BroadcastReceiver{
         String action = intent.getAction();
         if(action.equals(Intent.ACTION_MEDIA_EJECT)){
             logger.debug("sdcard unmounted");
-            DownloadList.waitAll();
+            DownloadList.waitAllForReconn();
             isSdcardMounted = false;
         }
         if(action.equals(Intent.ACTION_MEDIA_MOUNTED)){
             logger.debug("sdcard mounted");
             if(isNetAlive){
-                DownloadList.refresh();
+                DownloadList.refresh(DownloadOrder.RECONNMODE_SDCARD);
                 isSdcardMounted = true;
             }
         }
@@ -37,13 +37,13 @@ class DownloadReceiver extends BroadcastReceiver{
             if(DownloadUtils.isNetAlive(context)){
                 logger.debug("net connected");
                 if(isSdcardMounted){
-                    DownloadList.refresh();
+                    DownloadList.refresh(DownloadOrder.RECONNMODE_NET);
                     isNetAlive = true;
                 }
             }
             else{
                 logger.debug("net unconnected");
-                DownloadList.waitAll();
+                DownloadList.waitAllForReconn();
                 isNetAlive = false;
             }
         }

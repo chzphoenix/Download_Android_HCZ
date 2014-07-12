@@ -18,12 +18,18 @@ public class DownloadService extends Service {
     public void onCreate() {
         super.onCreate();
         DownloadReceiver.addReceiver(this);
+        if(Downloader.serviceListener != null){
+            Downloader.serviceListener.onServiceCreate();
+        }
     }
 
 
     @Override
     public void onDestroy() {
         DownloadReceiver.removeReceiver(this);
+        if(Downloader.serviceListener != null){
+            Downloader.serviceListener.onServiceDestroy();
+        }
         super.onDestroy();
     }
 
@@ -38,42 +44,135 @@ public class DownloadService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         int action = intent.getIntExtra("action", 0);
-        int id = intent.getIntExtra("id", 0);
         if (action == 0) {
             logger.error("start service failed, action is wrong");
             return START_NOT_STICKY;
         }
-        if (!DownloadList.has(id)) {
-            logger.error("{} is not exist.", id);
-        }
-        Downloader down = DownloadList.get(id);
-        down.setContext(this);
-        int state = down.di.getState();
+
+        int id = intent.getIntExtra("id", 0);
+        DownloadInfo di = getDownloader(id);
+
+        String group = intent.getStringExtra("group");
+
+        int[] ids = intent.getIntArrayExtra("ids");
+
         switch (action) {
             case DownloadOrder.ACTION_ADD:
-                if (state <= DownloadOrder.STATE_DOWNING || state >= DownloadOrder.STATE_SUCCESS) {
-                    down.di.setStateAndRefresh(DownloadOrder.STATE_WAIT);
-                } else {
-                    DownloadList.refresh();
+                if(di == null){
+                    break;
+                }
+                if (di.getState() <= DownloadOrder.STATE_DOWNING || di.getState() >= DownloadOrder.STATE_SUCCESS) {
+                    di.setState(DownloadOrder.STATE_WAIT_DOWN);
                 }
                 break;
             case DownloadOrder.ACTION_PAUSE:
-                if (state != DownloadOrder.STATE_SUCCESS) {
-                    down.di.setStateAndRefresh(DownloadOrder.STATE_PAUSE);
-                    return START_NOT_STICKY;
-                }
+                pauseDown(di);
                 break;
             case DownloadOrder.ACTION_RESUME:
-                if (state != DownloadOrder.STATE_SUCCESS) {
-                    down.di.setStateAndRefresh(DownloadOrder.STATE_WAIT);
-                    return START_NOT_STICKY;
-                }
+                resumeDown(di);
                 break;
             case DownloadOrder.ACTION_CANCEL:
-                down.stopDownload();
+                cancelDown(di);
+                break;
+            case DownloadOrder.ACTION_PAUSE_GROUP:
+                if(group == null || group.equals("")){
+                    break;
+                }
+                for(Downloader downloader : DownloadList.downloadMap.values()){
+                    if(downloader.di.getGroup().equals(group)){
+                        pauseDown(downloader.di);
+                    }
+                }
+                break;
+            case DownloadOrder.ACTION_RESUME_GROUP:
+                if(group == null || group.equals("")){
+                    break;
+                }
+                for(Downloader downloader : DownloadList.downloadMap.values()){
+                    if(downloader.di.getGroup().equals(group)){
+                        resumeDown(downloader.di);
+                    }
+                }
+                break;
+            case DownloadOrder.ACTION_CANCEL_GROUP:
+                int isDowned = intent.getIntExtra("isDowned", -1);
+                if(group == null || group.equals("") || isDowned == -1){
+                    break;
+                }
+                for(Downloader downloader : DownloadList.downloadMap.values()){
+                    if(downloader.di.getGroup().equals(group)){
+                        if((isDowned == DownloadOrder.STATE_SUCCESS) == (di.getState() == DownloadOrder.STATE_SUCCESS)){
+                            cancelDown(downloader.di);
+                        }
+                    }
+                }
+                break;
+            case DownloadOrder.ACTION_PAUSE_IDS:
+                if(ids == null || ids.length <= 0){
+                    break;
+                }
+                for(int downId : ids){
+                    pauseDown(getDownloader(downId));
+                }
+                break;
+            case DownloadOrder.ACTION_RESUME_IDS:
+                if(ids == null || ids.length <= 0){
+                    break;
+                }
+                for(int downId : ids){
+                    resumeDown(getDownloader(downId));
+                }
+                break;
+            case DownloadOrder.ACTION_CANCEL_IDS:
+                if(ids == null || ids.length <= 0){
+                    break;
+                }
+                for(int downId : ids){
+                    cancelDown(getDownloader(downId));
+                }
                 break;
         }
+        DownloadList.refresh(0);
         return START_NOT_STICKY;
+    }
+
+
+    private DownloadInfo getDownloader(int id){
+        if (!DownloadList.has(id)) {
+            logger.error("{} is not exist.", id);
+            return null;
+        }
+        Downloader down = DownloadList.get(id);
+        down.setContext(this);
+        return down.di;
+    }
+
+    private void pauseDown(DownloadInfo di){
+        if(di == null){
+            return;
+        }
+        if (di.getState() != DownloadOrder.STATE_SUCCESS) {
+            di.setState(DownloadOrder.STATE_PAUSE);
+        }
+    }
+
+
+    private void resumeDown(DownloadInfo di){
+        if(di == null){
+            return;
+        }
+        if (di.getState() != DownloadOrder.STATE_SUCCESS) {
+            di.setState(DownloadOrder.STATE_WAIT_DOWN);
+        }
+    }
+
+
+    private void cancelDown(DownloadInfo di){
+        if(di == null){
+            return;
+        }
+        di.setState(DownloadOrder.STATE_STOP);
+        DownloadUtils.removeFile(di.getPath());
     }
 
 }
