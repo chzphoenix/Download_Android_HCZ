@@ -5,6 +5,8 @@ import java.util.List;
 import android.content.Context;
 
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,15 +16,15 @@ import org.slf4j.LoggerFactory;
  * Created by cuihz on 2014/7/3.
  */
 public class Downloader {
-    private DownloaderListener downloadListener = null;
+    private Handler downloadHandler = null;
     protected static DownServiceListener serviceListener= null;
     protected DownloadInfo di;
     private Context context;
     private static final Logger logger = LoggerFactory.getLogger(Downloader.class);
 
 
-    protected Downloader(DownloadInfo di, DownloaderListener listener) {
-        this.downloadListener = listener;
+    protected Downloader(DownloadInfo di, Handler downloadHandler) {
+        this.downloadHandler = downloadHandler;
         this.di = di;
     }
 
@@ -60,37 +62,37 @@ public class Downloader {
             public void onStorageNotEnough(long softSize, long avilableSize) {
                 logger.error("{} not enough size, sdsize={}", di.getName(), avilableSize);
                 String msg = "空间不足";
-                if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadOrder.FAILED_STORAGE_NOT_ENOUPH, msg);
+                if (downloadHandler != null) {
+                    downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_PRO_FAILED, DownloadOrder.FAILED_STORAGE_NOT_ENOUPH, 0, msg);
                 }
             }
 
             public void onStorageNotMount(String path) {
                 logger.error("{} sdcard not mounted", di.getName());
                 String msg = "sd卡不存在";
-                if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadOrder.FAILED_SDCARD_UNMOUNT, msg);
+                if (downloadHandler != null) {
+                    downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_PRO_FAILED, DownloadOrder.FAILED_SDCARD_UNMOUNT, 0, msg);
                 }
             }
 
             public void onDownloadUrlConnectError(String msg) {
                 logger.error("{} not connect to {}", di.getName(), di.getUrl());
-                if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadOrder.FAILED_URL_UNCONNECT, msg);
+                if (downloadHandler != null) {
+                    downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_PRO_FAILED, DownloadOrder.FAILED_URL_UNCONNECT, 0, msg);
                 }
             }
 
             public void onFileSizeError() {
                 logger.error("{} file size is diff of {}", di.getName(), di.getUrl());
-                if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadOrder.FAILED_SIZE_ERROR, "文件大小与服务器不符");
+                if (downloadHandler != null) {
+                    downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_PRO_FAILED, DownloadOrder.FAILED_SIZE_ERROR, 0, "文件大小与服务器不符");
                 }
             }
 
             public void onCreateFailed(String msg) {
                 logger.error("{} create tmp file failed", di.getName());
-                if (downloadListener != null) {
-                    downloadListener.onProFailed(DownloadOrder.FAILED_CREATE_TMPFILE, msg);
+                if (downloadHandler != null) {
+                    downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_PRO_FAILED, DownloadOrder.FAILED_CREATE_TMPFILE, 0, msg);
                 }
             }
         });
@@ -105,7 +107,7 @@ public class Downloader {
      */
     private void download(boolean isNew) {
         // 启动文件下载线程
-        DownloadTask downloadTask = new DownloadTask(context, di, downloadListener, isNew);
+        DownloadTask downloadTask = new DownloadTask(context, di, downloadHandler, isNew);
         downloadTask.start();
     }
 
@@ -318,6 +320,11 @@ public class Downloader {
     }
 
 
+    public static boolean isInTaskList(int id){
+        return DownloadList.has(id);
+    }
+
+
     /**
      * 获取数据库中的下载列表。
      * 用于程序启动时
@@ -336,9 +343,10 @@ public class Downloader {
      *
      * @param context
      * @param di      下载信息
+     * @param handler
      * @throws IllegalParamsException di参数不合法
      */
-    public static void downloadEvent(Context context, DownloadInfo di, DownloaderListener listener) throws IllegalParamsException {
+    public static void downloadEvent(Context context, DownloadInfo di, Handler handler) throws IllegalParamsException {
         di.checkIllegal();
         //检查列表中是否已存在
         if (DownloadList.has(di.getId())) {
@@ -347,7 +355,7 @@ public class Downloader {
         if(context == null){
             throw new IllegalParamsException("context", "不能为空");
         }
-        Downloader down = new Downloader(di, listener);
+        Downloader down = new Downloader(di, handler);
         DownloadList.add(down);
         Intent intent = new Intent(context, DownloadService.class);
         intent.putExtra("action", DownloadOrder.ACTION_ADD);
@@ -368,13 +376,13 @@ public class Downloader {
     /**
      * 设置下载监听器
      * @param id
-     * @param listener
+     * @param handler
      * @throws DownloadNotExistException
      */
-    public static void setDownloadListener(int id, DownloaderListener listener) throws DownloadNotExistException {
+    public static void setDownloadListener(int id, Handler handler) throws DownloadNotExistException {
         if (DownloadList.has(id)) {
             Downloader down = DownloadList.get(id);
-            down.downloadListener = listener;
+            down.downloadHandler = handler;
         } else {
             throw new DownloadNotExistException();
         }

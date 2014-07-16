@@ -5,6 +5,7 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
+import android.os.Message;
 import android.os.StatFs;
 
 import java.io.*;
@@ -170,4 +171,6 @@ class DownloadUtils {
         int fileSize = conn.getContentLength();
         return fileSize;
     }
+
+
 }

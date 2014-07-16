@@ -49,6 +49,21 @@ public class DownloadOrder {
     public static final int FAILED_SIZE_ERROR = 10005;
 
 
+    /** 准备下载失败  */
+    public static final int HANDLE_DOWN_PRO_FAILED = 100001;
+    /** 下载开始  */
+    public static final int HANDLE_DOWN_START = 100002;
+    /** 下载进度改变  */
+    public static final int HANDLE_DOWN_PROGRESS = 100003;
+    /** 下载中失败  */
+    public static final int HANDLE_DOWNING_FAILED = 100004;
+    /** 下载完成验证失败  */
+    public static final int HANDLE_CHECK_FAILED = 100005;
+    /** 下载成功  */
+    public static final int HANDLE_DOWN_SUCCESS = 100006;
+
+
+
 
 
     protected static final int ACTION_ADD = 1001;

@@ -227,12 +227,13 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 设置下载状态并刷新下载列表，具体见DownloadOrder类
-     * 设置完成刷新一下下载列表。如下载成功后让下一个等待的任务开始执行
+     * 设置完成刷新一下下载列表。如下载成功后让下一个等待的任务开始执行。更新一下数据库
      * @param state
      */
     protected void setStateAndRefresh(int state) {
         this.state = state;
         DownloadList.refresh(0);
+        DownloadDB.update(this);
     }
 
 

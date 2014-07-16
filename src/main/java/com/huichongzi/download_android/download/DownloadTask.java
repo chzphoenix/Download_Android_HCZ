@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import android.content.Context;
+import android.os.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,7 @@ class DownloadTask extends Thread {
     // 分几个线程下载该应用
     private int threadNum = 5;
     private long downloadedSize = 0;
-    private DownloaderListener downloadListener = null;
+    private Handler downloadHandler = null;
     private boolean isDownMidle = false;
     private String tmpPath;
     private UnFinishedConfFile unFinishConf;
@@ -39,12 +40,12 @@ class DownloadTask extends Thread {
      *
      * @param context
      * @param di       下载信息
-     * @param listener 下载事件监听回调
+     * @param handler 下载事件监听回调
      * @param isNew    是否为新下载文件
      */
-    protected DownloadTask(Context context, DownloadInfo di, DownloaderListener listener, boolean isNew) {
+    protected DownloadTask(Context context, DownloadInfo di, Handler handler, boolean isNew) {
         this.context = context;
-        this.downloadListener = listener;
+        this.downloadHandler = handler;
         this.di = di;
         this.isNew = isNew;
     }
@@ -67,8 +68,8 @@ class DownloadTask extends Thread {
             fileSize = di.getSize();
             File file = new File(tmpPath);
             di.setStateAndRefresh(DownloadOrder.STATE_DOWNING);
-            if (downloadListener != null) {
-                downloadListener.onStartDownload();
+            if (downloadHandler != null) {
+                downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_START);
             }
 
             //如果是断点续传，首先判断记录的大小与下载信息中大小是否一致，不一致则删除重下
@@ -95,13 +96,13 @@ class DownloadTask extends Thread {
                     //long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize - 1;
                     long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize;
                     // 启动线程，分别下载自己需要下载的部分
-                    fdt = new SingleDownloadThread(context, i, di, file, beginPos, endPos, downloadListener);
+                    fdt = new SingleDownloadThread(context, i, di, file, beginPos, endPos, downloadHandler);
                 } else {
                     long beginPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "start")) : i * blockSize;
                     //long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize - 1 + downloadSizeMore;
                     long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize + downloadSizeMore;
                     // 最后一个线程下载字节=平均+多余字节
-                    fdt = new SingleDownloadThread(context, i, di, file, beginPos, endPos, downloadListener);
+                    fdt = new SingleDownloadThread(context, i, di, file, beginPos, endPos, downloadHandler);
                 }
                 fdt.setName("Thread" + i);
                 fdt.start();
@@ -126,27 +127,28 @@ class DownloadTask extends Thread {
                 di.setProcess(progress);
                 di.setSpeed(downloadedSize - this.downloadedSize);
                 this.downloadedSize = downloadedSize;
-                if (downloadListener != null) {
-                    downloadListener.onDownloadProgressChanged(progress);
+                if (downloadHandler != null) {
+                    downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_PROGRESS, progress);
                 }
 
                 // 下载完毕
                 if (progress == 100) {
                     downloadOver();
                 }
-                //当下载大小超过2M，记录已下载大小，将记录的下载信息保持至文件
+                //当下载大小超过2M，记录已下载大小，将记录的下载信息保持至文件。更新数据库
                 if (downloadedSize / (1024 * 1024 * 2 * count) >= 1) {
                     unFinishConf.put("downloadedSize", downloadedSize + alreadyDownloadSize + "");
                     unFinishConf.write();
                     count++;
+                    DownloadDB.update(di);
                 }
                 // 休息1秒后再读取下载进度
                 sleep(1000);
             }
         } catch (Exception e) {
             di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            if (downloadListener != null) {
-                downloadListener.onDownloadFailed(e.getMessage());
+            if (downloadHandler != null) {
+                downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWNING_FAILED, e.getMessage());
             }
         }
 
@@ -163,8 +165,8 @@ class DownloadTask extends Thread {
         if ((di.getCheckMode() & DownloadOrder.CHECKMODE_MD5_END) != 0 && !checkMd5(downloadFile)) {
             DownloadUtils.removeFile(di.getPath());
             di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            if (downloadListener != null) {
-                downloadListener.onCheckFailed("文件MD5不同！");
+            if (downloadHandler != null) {
+                downloadHandler.obtainMessage(DownloadOrder.HANDLE_CHECK_FAILED, "文件MD5不同！");
             }
             return;
         }
@@ -172,8 +174,8 @@ class DownloadTask extends Thread {
         if ((di.getCheckMode() & DownloadOrder.CHECKMODE_SIZE_END) != 0 && downloadFile.length() != di.getSize()) {
             DownloadUtils.removeFile(di.getPath());
             di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            if (downloadListener != null) {
-                downloadListener.onCheckFailed("文件大小不同！");
+            if (downloadHandler != null) {
+                downloadHandler.obtainMessage(DownloadOrder.HANDLE_CHECK_FAILED, "文件大小不同！");
             }
             return;
         }
@@ -186,8 +188,8 @@ class DownloadTask extends Thread {
         }
         // 从下载列表中删除已下载成功的应用
         di.setStateAndRefresh(DownloadOrder.STATE_SUCCESS);
-        if (downloadListener != null) {
-            downloadListener.onDownloadSuccess();
+        if (downloadHandler != null) {
+            downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_SUCCESS);
         }
     }
 

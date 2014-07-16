@@ -19,7 +19,7 @@ public class DownloadService extends Service {
         super.onCreate();
         DownloadReceiver.addReceiver(this);
         if(Downloader.serviceListener != null){
-            Downloader.serviceListener.onServiceCreate();
+            Downloader.serviceListener.onServiceCreate(this);
         }
     }
 
@@ -28,7 +28,7 @@ public class DownloadService extends Service {
     public void onDestroy() {
         DownloadReceiver.removeReceiver(this);
         if(Downloader.serviceListener != null){
-            Downloader.serviceListener.onServiceDestroy();
+            Downloader.serviceListener.onServiceDestroy(this);
         }
         super.onDestroy();
     }
@@ -43,6 +43,9 @@ public class DownloadService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
+        if(Downloader.serviceListener != null){
+            Downloader.serviceListener.onServiceStart(this);
+        }
         int action = intent.getIntExtra("action", 0);
         if (action == 0) {
             logger.error("start service failed, action is wrong");
@@ -161,7 +164,7 @@ public class DownloadService extends Service {
         if(di == null){
             return;
         }
-        if (di.getState() != DownloadOrder.STATE_SUCCESS) {
+        if (di.getState() != DownloadOrder.STATE_SUCCESS && di.getState() != DownloadOrder.STATE_DOWNING) {
             di.setState(DownloadOrder.STATE_WAIT_DOWN);
         }
     }
