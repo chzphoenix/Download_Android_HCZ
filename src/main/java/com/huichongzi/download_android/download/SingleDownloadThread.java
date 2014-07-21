@@ -31,17 +31,17 @@ class SingleDownloadThread extends Thread {
     private long endPosition;
     private long curPosition;
     private long downloadSize = 0;
-    private Handler downloadHandler;
-    private static final int connTimeout = 1000 * 40;
-    private static final int readTimeout = 1000 * 60;
+    private Downloader downloader;
+    private static final int CONN_TIMEOUT = 1000 * 40;
+    private static final int READ_TIMEOUT = 1000 * 60;
     // 下载中停止一段时间，以防过于耗费资源
-    private static final int Sleep_Time = 50;
+    private static final int SLEEP_TIME = 50;
     private Context context;
 
 
 
     protected SingleDownloadThread(Context context, int threadId, DownloadInfo di, File file, long startPosition,
-                                   long endPosition, Handler handler) {
+                                   long endPosition, Downloader downloader) {
         this.context = context;
         this.threadId = threadId;
         this.di = di;
@@ -49,7 +49,7 @@ class SingleDownloadThread extends Thread {
         this.startPosition = startPosition;
         this.curPosition = startPosition;
         this.endPosition = endPosition;
-        this.downloadHandler = handler;
+        this.downloader = downloader;
     }
 
     @Override
@@ -61,8 +61,8 @@ class SingleDownloadThread extends Thread {
         try {
             URL url = new URL(di.getUrl());
             con = (HttpURLConnection) url.openConnection();
-            con.setConnectTimeout(connTimeout);
-            con.setReadTimeout(readTimeout);
+            con.setConnectTimeout(CONN_TIMEOUT);
+            con.setReadTimeout(READ_TIMEOUT);
             con.setAllowUserInteraction(true);
 
             // 设置当前线程下载的起点，终点
@@ -93,13 +93,10 @@ class SingleDownloadThread extends Thread {
                     } else {
                         downloadSize += len;
                     }
-                    Thread.sleep(Sleep_Time);
+                    Thread.sleep(SLEEP_TIME);
                 } catch (InterruptedException e) {
                     logger.error("{} thread {} -> download Interrupt error:{}", di.getName(), threadId, e.getMessage());
-                    di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-                    if(downloadHandler != null){
-                        downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWNING_FAILED, e.getMessage());
-                    }
+                    downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true);
                 }
             }
             logger.info("{} thread {} -> Total downloadsize: {}", di.getName(), threadId, downloadSize);
@@ -107,28 +104,18 @@ class SingleDownloadThread extends Thread {
             fos.close();
         } catch (SocketTimeoutException e) {
             logger.error("{} thread {} -> download SocketTimeoutException:{}", di.getName(), threadId, e.getMessage());
-            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            if(downloadHandler != null){
-                downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWNING_FAILED, e.getMessage());
-            }
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true);
         } catch (IOException e) {
             if(context != null && (!DownloadUtils.isNetAlive(context) || !DownloadUtils.isSdcardMount())){
-                DownloadList.waitAllForReconn();
+                downloader.changeState(DownloadOrder.STATE_WAIT_RECONN, 0, null, false);
             }
             else{
                 logger.error("{} thread {} -> download IOException:{}", di.getName(), threadId, e.getMessage());
-                di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-
-            }
-            if(downloadHandler != null){
-                downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWNING_FAILED, e.getMessage());
+                downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true);
             }
         } catch (Exception e) {
             logger.error("{} thread {} -> download error:{}", di.getName(), threadId, e.getMessage());
-            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            if(downloadHandler != null){
-                downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWNING_FAILED, e.getMessage());
-            }
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true);
         }
     }
 

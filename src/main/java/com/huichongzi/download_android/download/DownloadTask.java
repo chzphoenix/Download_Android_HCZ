@@ -27,7 +27,7 @@ class DownloadTask extends Thread {
     // 分几个线程下载该应用
     private int threadNum = 5;
     private long downloadedSize = 0;
-    private Handler downloadHandler = null;
+    private Downloader downloader = null;
     private boolean isDownMidle = false;
     private String tmpPath;
     private UnFinishedConfFile unFinishConf;
@@ -40,12 +40,12 @@ class DownloadTask extends Thread {
      *
      * @param context
      * @param di       下载信息
-     * @param handler 下载事件监听回调
+     * @param downloader
      * @param isNew    是否为新下载文件
      */
-    protected DownloadTask(Context context, DownloadInfo di, Handler handler, boolean isNew) {
+    protected DownloadTask(Context context, DownloadInfo di, Downloader downloader, boolean isNew) {
         this.context = context;
-        this.downloadHandler = handler;
+        this.downloader = downloader;
         this.di = di;
         this.isNew = isNew;
     }
@@ -67,10 +67,7 @@ class DownloadTask extends Thread {
         try {
             fileSize = di.getSize();
             File file = new File(tmpPath);
-            di.setStateAndRefresh(DownloadOrder.STATE_DOWNING);
-            if (downloadHandler != null) {
-                downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_START);
-            }
+            downloader.changeState(DownloadOrder.STATE_DOWNING, 0, null, false);
 
             //如果是断点续传，首先判断记录的大小与下载信息中大小是否一致，不一致则删除重下
             if (isDownMidle && fileSize != Integer.parseInt(unFinishConf.getValue("fileSize"))) {
@@ -96,13 +93,13 @@ class DownloadTask extends Thread {
                     //long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize - 1;
                     long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize;
                     // 启动线程，分别下载自己需要下载的部分
-                    fdt = new SingleDownloadThread(context, i, di, file, beginPos, endPos, downloadHandler);
+                    fdt = new SingleDownloadThread(context, i, di, file, beginPos, endPos, downloader);
                 } else {
                     long beginPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "start")) : i * blockSize;
                     //long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize - 1 + downloadSizeMore;
                     long endPos = isDownMidle ? Integer.parseInt(unFinishConf.getValue(i + "end")) : (i + 1) * blockSize + downloadSizeMore;
                     // 最后一个线程下载字节=平均+多余字节
-                    fdt = new SingleDownloadThread(context, i, di, file, beginPos, endPos, downloadHandler);
+                    fdt = new SingleDownloadThread(context, i, di, file, beginPos, endPos, downloader);
                 }
                 fdt.setName("Thread" + i);
                 fdt.start();
@@ -124,12 +121,10 @@ class DownloadTask extends Thread {
                     fds[i].saveProgress(unFinishConf);
                 }
                 int progress = (int) ((downloadedSize * 1.0 + alreadyDownloadSize) / fileSize * 100);
-                di.setProcess(progress);
+                di.setProgress(progress);
                 di.setSpeed(downloadedSize - this.downloadedSize);
                 this.downloadedSize = downloadedSize;
-                if (downloadHandler != null) {
-                    downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_PROGRESS, progress);
-                }
+                downloader.changeState(DownloadOrder.STATE_DOWNING, progress, null, false);
 
                 // 下载完毕
                 if (progress == 100) {
@@ -146,10 +141,7 @@ class DownloadTask extends Thread {
                 sleep(1000);
             }
         } catch (Exception e) {
-            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            if (downloadHandler != null) {
-                downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWNING_FAILED, e.getMessage());
-            }
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true);
         }
 
     }
@@ -164,19 +156,13 @@ class DownloadTask extends Thread {
         //验证md5
         if ((di.getCheckMode() & DownloadOrder.CHECKMODE_MD5_END) != 0 && !checkMd5(downloadFile)) {
             DownloadUtils.removeFile(di.getPath());
-            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            if (downloadHandler != null) {
-                downloadHandler.obtainMessage(DownloadOrder.HANDLE_CHECK_FAILED, "文件MD5不同！");
-            }
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_MD5_ERROR, "已下载文件md5校验失败", true);
             return;
         }
         //验证大小
         if ((di.getCheckMode() & DownloadOrder.CHECKMODE_SIZE_END) != 0 && downloadFile.length() != di.getSize()) {
             DownloadUtils.removeFile(di.getPath());
-            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            if (downloadHandler != null) {
-                downloadHandler.obtainMessage(DownloadOrder.HANDLE_CHECK_FAILED, "文件大小不同！");
-            }
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SIZE_ERROR, "已下载文件大小校验失败", true);
             return;
         }
         if (tmpPath.endsWith(StorageHandleTask.Unfinished_Sign)) {
@@ -186,11 +172,7 @@ class DownloadTask extends Thread {
             // 更改文件名
             downloadFile.renameTo(toFile);
         }
-        // 从下载列表中删除已下载成功的应用
-        di.setStateAndRefresh(DownloadOrder.STATE_SUCCESS);
-        if (downloadHandler != null) {
-            downloadHandler.obtainMessage(DownloadOrder.HANDLE_DOWN_SUCCESS);
-        }
+        downloader.changeState(DownloadOrder.STATE_SUCCESS, 0, null, true);
     }
 
 

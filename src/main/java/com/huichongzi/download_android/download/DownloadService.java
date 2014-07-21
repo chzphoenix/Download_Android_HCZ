@@ -53,7 +53,7 @@ public class DownloadService extends Service {
         }
 
         int id = intent.getIntExtra("id", 0);
-        DownloadInfo di = getDownloader(id);
+        Downloader down = getDownloader(id);
 
         String group = intent.getStringExtra("group");
 
@@ -61,21 +61,22 @@ public class DownloadService extends Service {
 
         switch (action) {
             case DownloadOrder.ACTION_ADD:
-                if(di == null){
+                if(down.di == null){
                     break;
                 }
-                if (di.getState() <= DownloadOrder.STATE_DOWNING || di.getState() >= DownloadOrder.STATE_SUCCESS) {
-                    di.setState(DownloadOrder.STATE_WAIT_DOWN);
+                if (down.di.getState() <= DownloadOrder.STATE_DOWNING || down.di.getState() >= DownloadOrder.STATE_SUCCESS) {
+                    down.di.setState(DownloadOrder.STATE_WAIT_DOWN);
                 }
+                down.changeState(down.di.getState(), 0, null, false);
                 break;
             case DownloadOrder.ACTION_PAUSE:
-                pauseDown(di);
+                pauseDown(down);
                 break;
             case DownloadOrder.ACTION_RESUME:
-                resumeDown(di);
+                resumeDown(down);
                 break;
             case DownloadOrder.ACTION_CANCEL:
-                cancelDown(di);
+                cancelDown(down);
                 break;
             case DownloadOrder.ACTION_PAUSE_GROUP:
                 if(group == null || group.equals("")){
@@ -83,7 +84,7 @@ public class DownloadService extends Service {
                 }
                 for(Downloader downloader : DownloadList.downloadMap.values()){
                     if(downloader.di.getGroup().equals(group)){
-                        pauseDown(downloader.di);
+                        pauseDown(downloader);
                     }
                 }
                 break;
@@ -93,7 +94,7 @@ public class DownloadService extends Service {
                 }
                 for(Downloader downloader : DownloadList.downloadMap.values()){
                     if(downloader.di.getGroup().equals(group)){
-                        resumeDown(downloader.di);
+                        resumeDown(downloader);
                     }
                 }
                 break;
@@ -104,8 +105,8 @@ public class DownloadService extends Service {
                 }
                 for(Downloader downloader : DownloadList.downloadMap.values()){
                     if(downloader.di.getGroup().equals(group)){
-                        if((isDowned == DownloadOrder.STATE_SUCCESS) == (di.getState() == DownloadOrder.STATE_SUCCESS)){
-                            cancelDown(downloader.di);
+                        if((isDowned == DownloadOrder.STATE_SUCCESS) == (downloader.di.getState() == DownloadOrder.STATE_SUCCESS)){
+                            cancelDown(downloader);
                         }
                     }
                 }
@@ -135,47 +136,46 @@ public class DownloadService extends Service {
                 }
                 break;
         }
-        DownloadList.refresh(0);
+        DownloadList.refresh(this, 0);
         return START_NOT_STICKY;
     }
 
 
-    private DownloadInfo getDownloader(int id){
+    private Downloader getDownloader(int id){
         if (!DownloadList.has(id)) {
             logger.error("{} is not exist.", id);
             return null;
         }
         Downloader down = DownloadList.get(id);
         down.setContext(this);
-        return down.di;
+        return down;
     }
 
-    private void pauseDown(DownloadInfo di){
-        if(di == null){
+    private void pauseDown(Downloader down){
+        if(down.di == null){
             return;
         }
-        if (di.getState() != DownloadOrder.STATE_SUCCESS) {
-            di.setState(DownloadOrder.STATE_PAUSE);
-        }
-    }
-
-
-    private void resumeDown(DownloadInfo di){
-        if(di == null){
-            return;
-        }
-        if (di.getState() != DownloadOrder.STATE_SUCCESS && di.getState() != DownloadOrder.STATE_DOWNING) {
-            di.setState(DownloadOrder.STATE_WAIT_DOWN);
+        if (down.di.getState() != DownloadOrder.STATE_SUCCESS) {
+            down.changeState(DownloadOrder.STATE_PAUSE, 0, null, false);
         }
     }
 
 
-    private void cancelDown(DownloadInfo di){
-        if(di == null){
+    private void resumeDown(Downloader down){
+        if(down.di == null){
             return;
         }
-        di.setState(DownloadOrder.STATE_STOP);
-        DownloadUtils.removeFile(di.getPath());
+        if (down.di.getState() != DownloadOrder.STATE_SUCCESS && down.di.getState() != DownloadOrder.STATE_DOWNING && down.di.getState() != DownloadOrder.STATE_WAIT_RECONN) {
+            down.changeState(DownloadOrder.STATE_WAIT_DOWN, 0, null, false);
+        }
+    }
+
+
+    private void cancelDown(Downloader down){
+        if(down.di == null){
+            return;
+        }
+        DownloadList.remove(down.di.getId());
     }
 
 }

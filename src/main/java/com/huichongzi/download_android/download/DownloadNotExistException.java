@@ -6,6 +6,6 @@ package com.huichongzi.download_android.download;
  */
 public class DownloadNotExistException extends Exception{
     public DownloadNotExistException(){
-        super("下载任务不存在，或输入的id不正确，请检查");
+        super("the download is not exist!");
     }
 }

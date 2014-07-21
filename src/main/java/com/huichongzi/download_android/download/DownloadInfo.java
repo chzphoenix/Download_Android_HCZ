@@ -8,6 +8,7 @@ import java.io.Serializable;
  */
 public class DownloadInfo implements Serializable{
 
+    /** 唯一标示（如果无Int类型的标示，可以用哈希值，只要保证此id唯一即可） **/
     private int id;
 	private String name;
     private String home;
@@ -20,7 +21,7 @@ public class DownloadInfo implements Serializable{
     private int reconnMode;
     private int state;
     private boolean unlimite;
-    private int process;
+    private int progress;
     private String other;
 
     private long speed;
@@ -37,7 +38,7 @@ public class DownloadInfo implements Serializable{
     }
 
     /**
-     * 设置下载唯一标示
+     * 设置下载唯一标示（如果无Int类型的标示，可以用哈希值，只要保证此id唯一即可）
      * @param id
      */
     public void setId(int id) {
@@ -225,17 +226,6 @@ public class DownloadInfo implements Serializable{
     }
 
 
-    /**
-     * 设置下载状态并刷新下载列表，具体见DownloadOrder类
-     * 设置完成刷新一下下载列表。如下载成功后让下一个等待的任务开始执行。更新一下数据库
-     * @param state
-     */
-    protected void setStateAndRefresh(int state) {
-        this.state = state;
-        DownloadList.refresh(0);
-        DownloadDB.update(this);
-    }
-
 
     /**
      * 获取上次保存的下载速度
@@ -257,16 +247,16 @@ public class DownloadInfo implements Serializable{
      * 获取上次保存的下载进度，100为满值
      * @return
      */
-    public int getProcess() {
-        return process;
+    public int getProgress() {
+        return progress;
     }
 
     /**
      * 设置下载进度
-     * @param process
+     * @param progress
      */
-    protected void setProcess(int process) {
-        this.process = process;
+    protected void setProgress(int progress) {
+        this.progress = progress;
     }
 
     /**
@@ -280,8 +270,8 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 设置扩展信息
-     * 如果是多个信息，建议使用分号进行分割
-     * @param other
+     *
+     * @param other 扩展信息，如果是多个信息，建议使用分号进行分割
      */
     public void setOther(String other) {
         this.other = other;
@@ -339,19 +329,19 @@ public class DownloadInfo implements Serializable{
      */
     public void checkIllegal() throws IllegalParamsException{
         if(id <= 0){
-            throw new IllegalParamsException("id", "不能为负或0");
+            throw new IllegalParamsException("id", "must > 0");
         }
         if(home == null || home.equals("")){
-            throw new IllegalParamsException("home", "不能为空");
+            throw new IllegalParamsException("home", "must not null");
         }
         if(url == null || url.equals("")){
-            throw new IllegalParamsException("url", "不能为空");
+            throw new IllegalParamsException("url", "must not nul");
         }
         if((checkMode & DownloadOrder.CHECKMODE_SIZE_START) == 1 && size <= 0){
-            throw new IllegalParamsException("checkMode", "下载前校验文件大小必须提前设置文件大小");
+            throw new IllegalParamsException("checkMode", "if check file size before download, 'size' must > 0");
         }
         if((checkMode & DownloadOrder.CHECKMODE_MD5_END) == 1 && (md5 == null || md5.equals(""))){
-            throw new IllegalParamsException("checkMode", "校验文件MD5必须提前设置MD5");
+            throw new IllegalParamsException("checkMode", "if check file md5 after download, 'md5' must not null");
         }
     }
 

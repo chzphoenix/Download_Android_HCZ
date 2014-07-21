@@ -29,12 +29,12 @@ public class DownloadOrder {
     public static final int STATE_WAIT_RECONN = 102;
     /** 暂停状态，用户进行暂停操作后的状态，不能自动下载，必须等用户手动恢复下载 */
     public static final int STATE_PAUSE = 103;
-    /** 停止状态，用户取消下载，此状态一般不会出现，用于异常情况  */
-    public static final int STATE_STOP = 104;
+    /** 下载成功  */
+    public static final int STATE_SUCCESS = 104;
     /** 下载失败。包括下载完成后校验失败，校验失败时会删除相关文件。  */
     public static final int STATE_FAILED = 105;
-    /** 下载成功  */
-    public static final int STATE_SUCCESS = 106;
+    /** 停止状态，用户取消下载，此状态一般不会出现，用于异常情况  */
+    public static final int STATE_STOP = 106;
 
 
     /** 空间不足  */
@@ -45,22 +45,15 @@ public class DownloadOrder {
     public static final int FAILED_URL_UNCONNECT = 10003;
     /** 创建临时文件失败  */
     public static final int FAILED_CREATE_TMPFILE = 10004;
-    /** 下载前验证大小失败  */
+    /** 验证大小失败  */
     public static final int FAILED_SIZE_ERROR = 10005;
+    /** 下载线程出错  */
+    public static final int FAILED_DOWNLOADING = 10006;
+    /** 验证MD5失败  */
+    public static final int FAILED_MD5_ERROR = 10007;
 
 
-    /** 准备下载失败  */
-    public static final int HANDLE_DOWN_PRO_FAILED = 100001;
-    /** 下载开始  */
-    public static final int HANDLE_DOWN_START = 100002;
-    /** 下载进度改变  */
-    public static final int HANDLE_DOWN_PROGRESS = 100003;
-    /** 下载中失败  */
-    public static final int HANDLE_DOWNING_FAILED = 100004;
-    /** 下载完成验证失败  */
-    public static final int HANDLE_CHECK_FAILED = 100005;
-    /** 下载成功  */
-    public static final int HANDLE_DOWN_SUCCESS = 100006;
+
 
 
 

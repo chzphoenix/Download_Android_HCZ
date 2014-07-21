@@ -1,7 +1,7 @@
 package com.huichongzi.download_android.download;
 
 /**
- * 存储事件监听
+ * 存储事件监听,此接口为内部使用
  * Created by cuihz on 2014/7/3.
  */
 interface StorageListener {

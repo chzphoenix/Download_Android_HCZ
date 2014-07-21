@@ -69,13 +69,9 @@ class StorageHandleTask extends Thread {
                 di.setSize(softSize);
             } else if (softSize != di.getSize() || di.getSize() <= 0) {
                 storageListener.onFileSizeError();
-                di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-                DownloadList.remove(di.getId());
                 return false;
             }
         } catch (Exception e) {
-            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            DownloadList.remove(di.getId());
             storageListener.onDownloadUrlConnectError(di.getUrl() + "连接下载地址错误" + e.getMessage());
             return false;
         }
@@ -110,13 +106,9 @@ class StorageHandleTask extends Thread {
                 }
                 storageListener.onNotDownload(di.getPath());
             } else {
-                di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-                DownloadList.remove(di.getId());
                 storageListener.onStorageNotEnough(softSize, availableSize);
             }
         } else {
-            di.setStateAndRefresh(DownloadOrder.STATE_FAILED);
-            DownloadList.remove(di.getId());
             storageListener.onStorageNotMount(di.getPath());
         }
         return true;
@@ -133,7 +125,6 @@ class StorageHandleTask extends Thread {
     private boolean isDownloadExist(String downloadDir) {
         File file = new File(downloadDir);
         if (file.exists() && file.isFile()) {
-            di.setStateAndRefresh(DownloadOrder.STATE_SUCCESS);
             // 下载完成
             if (storageListener != null) {
                 storageListener.onAlreadyDownload(downloadDir);

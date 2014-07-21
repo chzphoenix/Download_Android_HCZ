@@ -10,7 +10,7 @@ public class IllegalParamsException extends  Exception{
 
     private static final Logger logger = LoggerFactory.getLogger(IllegalParamsException.class);
     public IllegalParamsException(String param, String msg){
-        super(param + "参数不合法：" + msg);
+        super("'" + param + "' param illegal：" + msg);
     }
 
 }
