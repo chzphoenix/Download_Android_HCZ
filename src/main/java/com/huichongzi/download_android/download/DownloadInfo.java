@@ -31,7 +31,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取下载唯一标示
-     * @return
+     * @return int
      */
     public int getId() {
         return id;
@@ -47,7 +47,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取文件名
-     * @return
+     * @return string
      */
     public String getName() {
         return name;
@@ -63,7 +63,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取下载路径（组合后）
-     * @return
+     * @return string
      */
     public String getPath() {
         String path = home + "/" + name;
@@ -76,7 +76,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取下载目录
-     * @return
+     * @return string
      */
     public String getHome() {
         return home;
@@ -92,7 +92,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取下载文件类型（扩展名,如果包含在文件名内，则返回空）
-     * @return
+     * @return string
      */
     public String getType() {
         return type;
@@ -110,7 +110,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取下载url
-     * @return
+     * @return string
      */
     public String getUrl() {
         return url;
@@ -127,7 +127,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取服务器返回的md5值，用于下载完成校验
-     * @return
+     * @return string
      */
     public String getMd5() {
         return md5;
@@ -145,7 +145,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取服务器返回的文件大小。当校验模式包含“下载前校验大小”，此大小为服务器返回的下载信息中的字段；不包含，此大小为请求url后返回的文件大小
-     * @return
+     * @return long
      */
     public long getSize() {
         return size;
@@ -162,7 +162,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取下载组，用于进行批量暂停等操作。
-     * @return
+     * @return string
      */
     public String getGroup() {
         return group;
@@ -178,7 +178,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取校验模式，具体见DownloadOrder类
-     * @return
+     * @return int
      */
     public int getCheckMode() {
         return checkMode;
@@ -195,7 +195,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取重连模式，具体见DownloadOrder类
-     * @return
+     * @return int
      */
     public int getReconnMode() {
         return reconnMode;
@@ -211,7 +211,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取下载状态，具体见DownloadOrder类
-     * @return
+     * @return int
      */
     public int getState() {
         return state;
@@ -229,7 +229,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取上次保存的下载速度
-     * @return
+     * @return long
      */
     public long getSpeed() {
         return speed;
@@ -245,7 +245,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取上次保存的下载进度，100为满值
-     * @return
+     * @return int
      */
     public int getProgress() {
         return progress;
@@ -261,7 +261,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 获取扩展信息
-     * @return
+     * @return string
      */
     public String getOther() {
         return other;
@@ -279,7 +279,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 下载是否受限
-     * @return
+     * @return boolean
      */
     public boolean isUnlimite() {
         return unlimite;

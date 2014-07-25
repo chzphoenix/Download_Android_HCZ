@@ -132,7 +132,7 @@ public class Downloader {
      * @param context
      * @param id      下载唯一id
      * @throws DownloadNotExistException 下载任务不存在或id不正确
-     * @throws IllegalParamsException 参数不合法
+     * @throws IllegalParamsException
      */
     public static void pauseDownload(Context context, int id) throws DownloadNotExistException, IllegalParamsException {
         if(context == null){
@@ -157,7 +157,7 @@ public class Downloader {
      *
      * @param context
      * @param ids
-     * @throws IllegalParamsException di参数不合法
+     * @throws IllegalParamsException
      */
     public static void pauseDownloadForIds(Context context, List<Integer> ids) throws IllegalParamsException {
         if(context == null){
@@ -178,7 +178,7 @@ public class Downloader {
      *
      * @param context
      * @param group 下载组
-     * @throws IllegalParamsException di参数不合法
+     * @throws IllegalParamsException
      */
     public static void pauseDownloadForGroup(Context context, String group) throws IllegalParamsException {
         if(context == null){
@@ -200,7 +200,7 @@ public class Downloader {
      * @param context
      * @param id      下载唯一id
      * @throws DownloadNotExistException 下载任务不存在或id不正确
-     * @throws IllegalParamsException di参数不合法
+     * @throws IllegalParamsException
      */
     public static void resumeDownload(Context context, int id) throws DownloadNotExistException, IllegalParamsException {
         if(context == null){
@@ -225,7 +225,7 @@ public class Downloader {
      *
      * @param context
      * @param ids
-     * @throws IllegalParamsException di参数不合法
+     * @throws IllegalParamsException
      */
     public static void resumeDownloadForIds(Context context, List<Integer> ids) throws IllegalParamsException {
         if(context == null){
@@ -245,7 +245,7 @@ public class Downloader {
      *
      * @param context
      * @param group 下载组
-     * @throws IllegalParamsException di参数不合法
+     * @throws IllegalParamsException
      */
     public static void resumeDownloadForGroup(Context context, String group) throws IllegalParamsException {
         if(context == null){
@@ -267,7 +267,7 @@ public class Downloader {
      * @param context
      * @param id  下载唯一id
      * @throws DownloadNotExistException 下载任务不存在或id不正确
-     * @throws IllegalParamsException di参数不合法
+     * @throws IllegalParamsException
      */
     public static void cancelDownload(Context context, int id) throws DownloadNotExistException, IllegalParamsException {
         if(context == null){
@@ -292,7 +292,7 @@ public class Downloader {
      *
      * @param context
      * @param ids
-     * @throws IllegalParamsException di参数不合法
+     * @throws IllegalParamsException
      */
     public static void cancelDownloadForIds(Context context, List<Integer> ids) throws IllegalParamsException {
         if(context == null){
@@ -314,7 +314,7 @@ public class Downloader {
      * @param context
      * @param group 下载组
      * @param isDowned 是否已下载完
-     * @throws IllegalParamsException di参数不合法
+     * @throws IllegalParamsException
      */
     public static void cancelDownloadForGroup(Context context, String group, boolean isDowned) throws IllegalParamsException {
         if(context == null){
@@ -334,7 +334,7 @@ public class Downloader {
     /**
      * 列表中是否已经存在此任务
      * @param id
-     * @return
+     * @return boolean
      */
     public static boolean isInList(int id){
         return DownloadList.has(id);
@@ -347,7 +347,7 @@ public class Downloader {
      *
      * @param group    下载组
      * @param isDowned 是否已下载完
-     * @return
+     * @return List<DownloadInfo>
      */
     public static List<DownloadInfo> getDownloadList(String group, boolean isDowned) {
         return DownloadList.getDownloadList(group, isDowned);
@@ -360,7 +360,7 @@ public class Downloader {
      * @param context
      * @param downloadInfo      下载信息
      * @param handler   当下载状态改变时会发送Message。Message.what为当前下载状态；Message.arg1在downloading状态下为进度值，在failed状态下为失败代码，其他状态无意义；Message.obj为字符串，在failed状态下为失败信息，其他无意义
-     * @throws IllegalParamsException 参数不合法
+     * @throws IllegalParamsException
      */
     public static void addDownload(Context context, DownloadInfo downloadInfo, Handler handler) throws IllegalParamsException {
         downloadInfo.checkIllegal();

@@ -6,6 +6,8 @@ import android.os.IBinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 /**
  * 下载后台服务
  * Created by cuihz on 2014/7/9.
@@ -61,13 +63,7 @@ public class DownloadService extends Service {
 
         switch (action) {
             case DownloadOrder.ACTION_ADD:
-                if(down.di == null){
-                    break;
-                }
-                if (down.di.getState() <= DownloadOrder.STATE_DOWNING || down.di.getState() >= DownloadOrder.STATE_SUCCESS) {
-                    down.di.setState(DownloadOrder.STATE_WAIT_DOWN);
-                }
-                down.changeState(down.di.getState(), 0, null, false);
+                addDown(down);
                 break;
             case DownloadOrder.ACTION_PAUSE:
                 pauseDown(down);
@@ -79,61 +75,23 @@ public class DownloadService extends Service {
                 cancelDown(down);
                 break;
             case DownloadOrder.ACTION_PAUSE_GROUP:
-                if(group == null || group.equals("")){
-                    break;
-                }
-                for(Downloader downloader : DownloadList.downloadMap.values()){
-                    if(downloader.di.getGroup().equals(group)){
-                        pauseDown(downloader);
-                    }
-                }
+                pauseGroup(group);
                 break;
             case DownloadOrder.ACTION_RESUME_GROUP:
-                if(group == null || group.equals("")){
-                    break;
-                }
-                for(Downloader downloader : DownloadList.downloadMap.values()){
-                    if(downloader.di.getGroup().equals(group)){
-                        resumeDown(downloader);
-                    }
-                }
+                resumeGroup(group);
                 break;
             case DownloadOrder.ACTION_CANCEL_GROUP:
                 int isDowned = intent.getIntExtra("isDowned", -1);
-                if(group == null || group.equals("") || isDowned == -1){
-                    break;
-                }
-                for(Downloader downloader : DownloadList.downloadMap.values()){
-                    if(downloader.di.getGroup().equals(group)){
-                        if((isDowned == DownloadOrder.STATE_SUCCESS) == (downloader.di.getState() == DownloadOrder.STATE_SUCCESS)){
-                            cancelDown(downloader);
-                        }
-                    }
-                }
+                cancelGroup(group, isDowned);
                 break;
             case DownloadOrder.ACTION_PAUSE_IDS:
-                if(ids == null || ids.length <= 0){
-                    break;
-                }
-                for(int downId : ids){
-                    pauseDown(getDownloader(downId));
-                }
+                pauseIds(ids);
                 break;
             case DownloadOrder.ACTION_RESUME_IDS:
-                if(ids == null || ids.length <= 0){
-                    break;
-                }
-                for(int downId : ids){
-                    resumeDown(getDownloader(downId));
-                }
+                resumeIds(ids);
                 break;
             case DownloadOrder.ACTION_CANCEL_IDS:
-                if(ids == null || ids.length <= 0){
-                    break;
-                }
-                for(int downId : ids){
-                    cancelDown(getDownloader(downId));
-                }
+                cancelIds(ids);
                 break;
         }
         DownloadList.refresh(this, 0);
@@ -141,14 +99,81 @@ public class DownloadService extends Service {
     }
 
 
-    private Downloader getDownloader(int id){
-        if (!DownloadList.has(id)) {
-            logger.error("{} is not exist.", id);
-            return null;
+    private void cancelIds(int[] ids){
+        if(ids == null || ids.length <= 0){
+            return;
         }
-        Downloader down = DownloadList.get(id);
-        down.setContext(this);
-        return down;
+        for(int downId : ids){
+            cancelDown(getDownloader(downId));
+        }
+    }
+
+
+    private void resumeIds(int[] ids){
+        if(ids == null || ids.length <= 0){
+            return;
+        }
+        for(int downId : ids){
+            resumeDown(getDownloader(downId));
+        }
+    }
+
+
+    private void pauseIds(int[] ids){
+        if(ids == null || ids.length <= 0){
+            return;
+        }
+        for(int downId : ids){
+            pauseDown(getDownloader(downId));
+        }
+    }
+
+    private void cancelGroup(String group, int isDowned){
+        if(group == null || group.equals("") || isDowned == -1){
+            return;
+        }
+        for(Downloader downloader : DownloadList.downloadMap.values()){
+            if(downloader.di.getGroup().equals(group)){
+                if((isDowned == DownloadOrder.STATE_SUCCESS) == (downloader.di.getState() == DownloadOrder.STATE_SUCCESS)){
+                    cancelDown(downloader);
+                }
+            }
+        }
+    }
+
+
+    private void resumeGroup(String group){
+        if(group == null || group.equals("")){
+            return;
+        }
+        for(Downloader downloader : DownloadList.downloadMap.values()){
+            if(downloader.di.getGroup().equals(group)){
+                resumeDown(downloader);
+            }
+        }
+    }
+
+    private void pauseGroup(String group){
+        if(group == null || group.equals("")){
+            return;
+        }
+        for(Downloader downloader : DownloadList.downloadMap.values()){
+            if(downloader.di.getGroup().equals(group)){
+                pauseDown(downloader);
+            }
+        }
+    }
+
+
+
+    private void addDown(Downloader down){
+        if(down.di == null){
+            return;
+        }
+        if (down.di.getState() <= DownloadOrder.STATE_DOWNING || down.di.getState() >= DownloadOrder.STATE_SUCCESS) {
+            down.di.setState(DownloadOrder.STATE_WAIT_DOWN);
+        }
+        down.changeState(down.di.getState(), 0, null, false);
     }
 
     private void pauseDown(Downloader down){
@@ -176,6 +201,17 @@ public class DownloadService extends Service {
             return;
         }
         DownloadList.remove(down.di.getId());
+    }
+
+
+    private Downloader getDownloader(int id){
+        if (!DownloadList.has(id)) {
+            logger.error("{} is not exist.", id);
+            return null;
+        }
+        Downloader down = DownloadList.get(id);
+        down.setContext(this);
+        return down;
     }
 
 }

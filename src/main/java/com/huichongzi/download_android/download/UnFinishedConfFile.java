@@ -47,7 +47,7 @@ class UnFinishedConfFile {
 
     /**
      * 判断文件是否被使用
-     * @return
+     * @return boolean
      */
     protected boolean isLock(){
 		try {
@@ -99,7 +99,7 @@ class UnFinishedConfFile {
 
     /**
      * 判断配置是否存在
-     * @return
+     * @return boolean
      */
     protected boolean isConfNull(){
 		if(conf.size() == 0){

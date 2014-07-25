@@ -24,7 +24,7 @@ class DownloadUtils {
     /**
      * 网络是否有效
      * @param context
-     * @return
+     * @return boolean
      */
     protected static boolean isNetAlive(Context context){
         ConnectivityManager conn = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -40,7 +40,7 @@ class DownloadUtils {
 
     /**
      * 检查sd卡是否存在
-     * @return
+     * @return boolean
      */
     protected static boolean isSdcardMount(){
         return Environment.getExternalStorageState().equals(
@@ -137,7 +137,7 @@ class DownloadUtils {
 
     /**
      * 获取本路径的可用空间
-     * @param path
+     * @param path long
      * @return
      */
     protected static long getAvailableSize(String path){
@@ -153,7 +153,7 @@ class DownloadUtils {
     /**
      * 通过url获取下载文件大小
      * @param urlStr 下载url
-     * @return
+     * @return long
      * @throws Exception
      */
     protected static long getFileSize(String urlStr) throws Exception {

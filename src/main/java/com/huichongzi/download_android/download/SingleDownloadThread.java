@@ -123,7 +123,7 @@ class SingleDownloadThread extends Thread {
 
     /**
      * 获取本线程已下载的大小
-     * @return
+     * @return long
      */
     protected long getDownloadSize() {
         return downloadSize;

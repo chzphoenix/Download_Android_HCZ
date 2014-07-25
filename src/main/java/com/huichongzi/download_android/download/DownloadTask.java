@@ -180,7 +180,7 @@ class DownloadTask extends Thread {
      * 校验文件的md5
      *
      * @param file
-     * @return
+     * @return boolean
      */
     private boolean checkMd5(File file) {
         if (di.getMd5() != null) {

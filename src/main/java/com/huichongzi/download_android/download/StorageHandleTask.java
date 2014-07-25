@@ -55,7 +55,7 @@ class StorageHandleTask extends Thread {
     /**
      * 检查是否文件下载一半；sd卡是否存在、空间是否足够等，并创建文件。
      *
-     * @return
+     * @return boolean
      */
     private boolean createStorageDir() {
         logger.debug("{} begin createStorageDir,downloadUrl= {}", di.getName(), di.getUrl());
@@ -120,7 +120,7 @@ class StorageHandleTask extends Thread {
      * 检查是否下载完成
      *
      * @param downloadDir 下载路径
-     * @return
+     * @return boolean
      */
     private boolean isDownloadExist(String downloadDir) {
         File file = new File(downloadDir);
