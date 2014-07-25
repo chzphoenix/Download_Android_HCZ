@@ -1,27 +1,45 @@
 package com.huichongzi.download_android.download;
 
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
 import java.io.Serializable;
 
 /**
  * 下载信息bean类
  * Created by cuihz on 2014/7/3.
  */
+@DatabaseTable
 public class DownloadInfo implements Serializable{
 
     /** 唯一标示（如果无Int类型的标示，可以用哈希值，只要保证此id唯一即可） **/
+    @DatabaseField(id = true)
     private int id;
+    @DatabaseField(canBeNull = false)
 	private String name;
-    private String home;
+    @DatabaseField(canBeNull = false)
+    private String downDir;
+    @DatabaseField
     private String type;
+    @DatabaseField(canBeNull = false)
 	private String url;
+    @DatabaseField
 	private String md5;
+    @DatabaseField
 	private long size;
+    @DatabaseField
     private String group;
+    @DatabaseField
     private int checkMode;
+    @DatabaseField
     private int reconnMode;
+    @DatabaseField
     private int state;
+    @DatabaseField
     private boolean unlimite;
+    @DatabaseField
     private int progress;
+    @DatabaseField
     private String other;
 
     private long speed;
@@ -66,7 +84,7 @@ public class DownloadInfo implements Serializable{
      * @return string
      */
     public String getPath() {
-        String path = home + "/" + name;
+        String path = downDir + "/" + name;
         if(type != null && !type.equals("")){
             path += "." + type;
         }
@@ -78,16 +96,16 @@ public class DownloadInfo implements Serializable{
      * 获取下载目录
      * @return string
      */
-    public String getHome() {
-        return home;
+    public String getDownDir() {
+        return downDir;
     }
 
     /**
      * 设置下载目录
-     * @param home
+     * @param downDir
      */
-    public void setHome(String home) {
-        this.home = home;
+    public void setDownDir(String downDir) {
+        this.downDir = downDir;
     }
 
     /**
@@ -299,7 +317,7 @@ public class DownloadInfo implements Serializable{
         return "DownloadInfo{" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
-                ", home='" + home + '\'' +
+                ", downDir='" + downDir + '\'' +
                 ", type='" + type == null ? "" : type + '\'' +
                 ", url='" + url + '\'' +
                 ", md5='" + md5 == null ? "" : md5 + '\'' +
@@ -331,8 +349,8 @@ public class DownloadInfo implements Serializable{
         if(id <= 0){
             throw new IllegalParamsException("id", "must > 0");
         }
-        if(home == null || home.equals("")){
-            throw new IllegalParamsException("home", "must not null");
+        if(downDir == null || downDir.equals("")){
+            throw new IllegalParamsException("downDir", "must not null");
         }
         if(url == null || url.equals("")){
             throw new IllegalParamsException("url", "must not nul");

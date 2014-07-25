@@ -42,13 +42,12 @@
 
 
 
-    <!-- 下面是对特定的包名打印设定级别日志信息   要有把注释打开，再配置好相应的信息-->
-    <!--Write TRACE messages from class A to its own log -->
-    <!--<logger name="com.example.A" level="TRACE">-->
-    <!--<appender-ref ref="TraceLog" />-->
-    <!--</logger>-->
+    <!--下面是对特定的包名打印设定级别日志信息   要有把注释打开，再配置好相应的信息-->
+   <!--<logger name="com.huichongzi.download_android.download" level="DEBUG">-->
+   <!--<appender-ref ref="logcat" />-->
+   <!--</logger>-->
 
-    <!-- 设置root的打印级别和输出端-->
+   <!-- 设置root的打印级别和输出端-->
     <root level="DEBUG">
         <appender-ref ref="logcat"/>
     </root>

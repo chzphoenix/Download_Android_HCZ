@@ -200,7 +200,7 @@ public class DownloadService extends Service {
         if(down.di == null){
             return;
         }
-        DownloadList.remove(down.di.getId());
+        DownloadList.remove(this, down.di.getId());
     }
 
 

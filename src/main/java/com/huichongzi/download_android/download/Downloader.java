@@ -6,6 +6,7 @@ import android.content.Context;
 
 import android.content.Intent;
 import android.os.Handler;
+import android.os.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ public class Downloader {
                 logger.warn("{} already exists in {}", di.getName(), path);
                 if (!DownloadList.has(di.getId())) {
                     changeState(DownloadOrder.STATE_SUCCESS, 0, null, true);
-                    DownloadList.add(Downloader.this);
+                    DownloadList.add(context, Downloader.this);
                 }
             }
 
@@ -61,23 +62,23 @@ public class Downloader {
             public void onStorageNotEnough(long softSize, long avilableSize) {
                 logger.error("{} not enough size, sdsize={}", di.getName(), avilableSize);
                 String msg = "storage not enough";
-                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_CREATE_TMPFILE, msg, true);
+                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_STORAGE_NOT_ENOUPH, msg, true);
             }
 
             public void onStorageNotMount(String path) {
                 logger.error("{} sdcard not mounted", di.getName());
                 String msg = "sdcard not mounted";
-                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_CREATE_TMPFILE, msg, true);
+                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SDCARD_UNMOUNT, msg, true);
             }
 
             public void onDownloadUrlConnectError(String msg) {
                 logger.error("{} not connect to {}", di.getName(), di.getUrl());
-                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_CREATE_TMPFILE, msg, true);
+                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_URL_UNCONNECT, msg, true);
             }
 
             public void onFileSizeError() {
                 logger.error("{} file size is diff of {}", di.getName(), di.getUrl());
-                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_CREATE_TMPFILE, "file size is diff", true);
+                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SIZE_ERROR, "file size is diff", true);
             }
 
             public void onCreateFailed(String msg) {
@@ -110,7 +111,7 @@ public class Downloader {
      */
     protected void changeState(int state, int code , String msg, boolean isNeedRefresh) {
         di.setState(state);
-        DownloadDB.update(di);
+        DownloadDao.update(context, di);
         if(isNeedRefresh){
             DownloadList.refresh(context, 0);
         }
@@ -118,7 +119,8 @@ public class Downloader {
             msg = "";
         }
         if(downloadHandler != null){
-            downloadHandler.obtainMessage(state, code, 0, msg);
+            Message message = downloadHandler.obtainMessage(state, code, 0, msg);
+            downloadHandler.sendMessage(message);
         }
     }
 
@@ -344,13 +346,13 @@ public class Downloader {
     /**
      * 获取数据库中的下载列表。
      * 用于程序启动时
-     *
+     * @param context
      * @param group    下载组
      * @param isDowned 是否已下载完
      * @return List<DownloadInfo>
      */
-    public static List<DownloadInfo> getDownloadList(String group, boolean isDowned) {
-        return DownloadList.getDownloadList(group, isDowned);
+    public static List<DownloadInfo> getDownloadList(Context context, String group, boolean isDowned) {
+        return DownloadList.getDownloadList(context, group, isDowned);
     }
 
 
@@ -372,7 +374,7 @@ public class Downloader {
             throw new IllegalParamsException("context", "must not null");
         }
         Downloader down = new Downloader(downloadInfo, handler);
-        DownloadList.add(down);
+        DownloadList.add(context, down);
         Intent intent = new Intent(context, DownloadService.class);
         intent.putExtra("action", DownloadOrder.ACTION_ADD);
         intent.putExtra("id", downloadInfo.getId());

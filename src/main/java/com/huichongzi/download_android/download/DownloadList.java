@@ -22,9 +22,9 @@ class DownloadList {
     protected static Hashtable<Integer, Downloader> downloadMap = new Hashtable<Integer, Downloader>();
 
 
-    protected static void add(Downloader down){
+    protected static void add(Context context, Downloader down){
         downloadMap.put(down.di.getId(), down);
-        DownloadDB.add(down.di);
+        DownloadDao.add(context, down.di);
     }
 
     protected static boolean has(int id){
@@ -50,7 +50,7 @@ class DownloadList {
         }
     }
 
-    protected static void remove(int id){
+    protected static void remove(Context context, int id){
         if(downloadMap.contains(id)){
             Downloader down = downloadMap.get(id);
             if(down != null && down.di != null){
@@ -59,7 +59,7 @@ class DownloadList {
             }
             downloadMap.remove(id);
         }
-        DownloadDB.delete(id);
+        DownloadDao.delete(context, id);
     }
 
     protected static Downloader get(int id){
@@ -69,15 +69,15 @@ class DownloadList {
 
 
 
-    protected static List<DownloadInfo> getDownloadList(String group, boolean isDowned) {
-        List<DownloadInfo> list = DownloadDB.getList(group, isDowned);
+    protected static List<DownloadInfo> getDownloadList(Context context, String group, boolean isDowned) {
+        List<DownloadInfo> list = DownloadDao.getList(context, group, isDowned);
         if(isDowned){
             //如果是下载完成的，需要检查文件是否已被删除
             for(DownloadInfo di : list){
                 File file = new File(di.getPath());
                 if(!file.exists() || !file.isFile()){
                     list.remove(di);
-                    DownloadDB.delete(di.getId());
+                    DownloadDao.delete(context, di.getId());
                 }
             }
         }
@@ -110,7 +110,7 @@ class DownloadList {
                     }
                 }
             }
-            DownloadDB.update(down.di);
+            DownloadDao.update(context, down.di);
         }
         //如果未达到下载限制，则遍历启动等待任务
         if(count < Max_Allow_Download) {
@@ -125,7 +125,7 @@ class DownloadList {
                         }
                     }
                 }
-                DownloadDB.update(down.di);
+                DownloadDao.update(context, down.di);
             }
         }
         logger.debug("download task count: {}", count);

@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 
 import android.content.Context;
-import android.os.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -135,7 +134,7 @@ class DownloadTask extends Thread {
                     unFinishConf.put("downloadedSize", downloadedSize + alreadyDownloadSize + "");
                     unFinishConf.write();
                     count++;
-                    DownloadDB.update(di);
+                    DownloadDao.update(context, di);
                 }
                 // 休息1秒后再读取下载进度
                 sleep(1000);
