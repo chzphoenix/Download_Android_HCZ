@@ -162,6 +162,11 @@ class DownloadUtils {
         conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("HEAD");
         conn.setRequestProperty("Connection", "close");
+        conn.setConnectTimeout(5000);
+        conn.setReadTimeout(5000);
+        conn.setRequestMethod("GET");
+        conn.setDoInput(true);
+        conn.connect();
         int downFileCode = conn.getResponseCode();
         if (downFileCode >= 200 && downFileCode < 300) {
         } else {

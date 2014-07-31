@@ -111,7 +111,7 @@ public class Downloader {
      */
     protected void changeState(int state, int code , String msg, boolean isNeedRefresh) {
         di.setState(state);
-        DownloadDao.update(context, di);
+        DownloadDao.save(context, di);
         if(isNeedRefresh){
             DownloadList.refresh(context, 0);
         }
@@ -351,7 +351,7 @@ public class Downloader {
      * @param isDowned 是否已下载完
      * @return List<DownloadInfo>
      */
-    public static List<DownloadInfo> getDownloadList(Context context, String group, boolean isDowned) {
+    public static List<DownloadInfo> getDownloadList(Context context, String group, boolean isDowned) throws DownloadDBException{
         return DownloadList.getDownloadList(context, group, isDowned);
     }
 

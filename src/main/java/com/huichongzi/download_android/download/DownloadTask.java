@@ -134,7 +134,7 @@ class DownloadTask extends Thread {
                     unFinishConf.put("downloadedSize", downloadedSize + alreadyDownloadSize + "");
                     unFinishConf.write();
                     count++;
-                    DownloadDao.update(context, di);
+                    DownloadDao.save(context, di);
                 }
                 // 休息1秒后再读取下载进度
                 sleep(1000);

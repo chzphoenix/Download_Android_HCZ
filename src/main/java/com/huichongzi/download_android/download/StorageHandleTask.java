@@ -93,6 +93,7 @@ class StorageHandleTask extends Thread {
         if (DownloadUtils.isSdcardMount()) {
             logger.debug("{} sdcard exist", di.getName());
             File file = new File(di.getPath());
+            file.getParentFile().mkdirs();
             availableSize = DownloadUtils.getAvailableSize(file.getParentFile().getPath());
             logger.debug("{} sd availaSize= {}, softsize=", di.getName(), availableSize, softSize);
             // 如果sd卡空间足够

@@ -84,7 +84,11 @@ public class DownloadInfo implements Serializable{
      * @return string
      */
     public String getPath() {
-        String path = downDir + "/" + name;
+        String path = downDir;
+        if(!downDir.endsWith("/")){
+            path += "/";
+        }
+        path += name;
         if(type != null && !type.equals("")){
             path += "." + type;
         }
@@ -318,11 +322,11 @@ public class DownloadInfo implements Serializable{
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", downDir='" + downDir + '\'' +
-                ", type='" + type == null ? "" : type + '\'' +
+                ", type='" + ( type == null ? "" : type ) + '\'' +
                 ", url='" + url + '\'' +
-                ", md5='" + md5 == null ? "" : md5 + '\'' +
+                ", md5='" + ( md5 == null ? "" : md5 ) + '\'' +
                 ", size=" + size +
-                ", other='" + other == null ? "" : other + '\'' +
+                ", other='" + ( other == null ? "" : other ) + '\'' +
                 '}';
     }
 
@@ -346,8 +350,8 @@ public class DownloadInfo implements Serializable{
      * @throws IllegalParamsException
      */
     public void checkIllegal() throws IllegalParamsException{
-        if(id <= 0){
-            throw new IllegalParamsException("id", "must > 0");
+        if(id == 0){
+            throw new IllegalParamsException("id", "must != 0");
         }
         if(downDir == null || downDir.equals("")){
             throw new IllegalParamsException("downDir", "must not null");

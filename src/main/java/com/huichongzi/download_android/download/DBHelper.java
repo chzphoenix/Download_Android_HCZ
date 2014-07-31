@@ -19,8 +19,8 @@ class DBHelper extends OrmLiteSqliteOpenHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(DBHelper.class);
 
-    private static final String DB_NAME_SMARTCACHE = "ifeng.db";
-    private static final int DB_VERSION_SMARTCACHE = 20140725;
+    private static final String DOWNLOAD_DB_NAME = "download.db";
+    private static final int DOWNLOAD_DB_VERSION = 1;
 
     private static final Class<?>[] DATA_CLASSES = {DownloadInfo.class};
 
@@ -28,17 +28,9 @@ class DBHelper extends OrmLiteSqliteOpenHelper {
     private Dao<DownloadInfo, String> downloadDao;
 
     public DBHelper(Context context) {
-        super(context, DB_NAME_SMARTCACHE, null, DB_VERSION_SMARTCACHE);
+        super(context, DOWNLOAD_DB_NAME, null, DOWNLOAD_DB_VERSION);
     }
 
-    private void openWAL(){
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB){
-            this.getWritableDatabase().enableWriteAheadLogging();
-        }
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN){
-            logger.info("isWriteAheadLoggingEnabled:{}",this.getWritableDatabase().isWriteAheadLoggingEnabled());
-        }
-    }
 
     /**
      * This is called when the database is first created. Usually you should call createTable
@@ -51,7 +43,6 @@ class DBHelper extends OrmLiteSqliteOpenHelper {
                 logger.info("DBHelper.onCreate:{}",dataClass.getName());
                 TableUtils.createTable(connectionSource, dataClass);
             }
-//            openWAL();
         } catch (Throwable e) {
             logger.error(e.toString(), e);
             throw new RuntimeException(e);
@@ -65,7 +56,7 @@ class DBHelper extends OrmLiteSqliteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase database, ConnectionSource connectionSource, int oldVersion, int newVersion) {
         try {
-            logger.info("db onUpgrade,dbname:{},oldVersion:{},newVersion:{}",DB_NAME_SMARTCACHE,oldVersion,newVersion);
+            logger.info("db onUpgrade,dbname:{},oldVersion:{},newVersion:{}",DOWNLOAD_DB_NAME,oldVersion,newVersion);
             for (Class<?> dataClass : DATA_CLASSES) {
                 logger.info("DBHelper.onUpgrade:{}",dataClass.getName());
                 TableUtils.dropTable(connectionSource, dataClass, true);

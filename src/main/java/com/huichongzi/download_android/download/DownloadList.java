@@ -24,7 +24,7 @@ class DownloadList {
 
     protected static void add(Context context, Downloader down){
         downloadMap.put(down.di.getId(), down);
-        DownloadDao.add(context, down.di);
+        DownloadDao.save(context, down.di);
     }
 
     protected static boolean has(int id){
@@ -69,7 +69,7 @@ class DownloadList {
 
 
 
-    protected static List<DownloadInfo> getDownloadList(Context context, String group, boolean isDowned) {
+    protected static List<DownloadInfo> getDownloadList(Context context, String group, boolean isDowned) throws DownloadDBException{
         List<DownloadInfo> list = DownloadDao.getList(context, group, isDowned);
         if(isDowned){
             //如果是下载完成的，需要检查文件是否已被删除
@@ -110,7 +110,7 @@ class DownloadList {
                     }
                 }
             }
-            DownloadDao.update(context, down.di);
+            DownloadDao.save(context, down.di);
         }
         //如果未达到下载限制，则遍历启动等待任务
         if(count < Max_Allow_Download) {
@@ -125,7 +125,7 @@ class DownloadList {
                         }
                     }
                 }
-                DownloadDao.update(context, down.di);
+                DownloadDao.save(context, down.di);
             }
         }
         logger.debug("download task count: {}", count);
