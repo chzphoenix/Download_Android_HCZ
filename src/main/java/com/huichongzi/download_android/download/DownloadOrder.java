@@ -51,6 +51,8 @@ public class DownloadOrder {
     public static final int FAILED_DOWNLOADING = 10006;
     /** 验证MD5失败  */
     public static final int FAILED_MD5_ERROR = 10007;
+    /** 添加下载任务失败，该下载已经存在  */
+    public static final int FAILED_ADD_EXIST = 10008;
 
 
 
@@ -69,4 +71,5 @@ public class DownloadOrder {
     protected static final int ACTION_PAUSE_GROUP = 1008;
     protected static final int ACTION_RESUME_GROUP = 1009;
     protected static final int ACTION_CANCEL_GROUP = 1010;
+    protected static final int ACTION_ADD_LIST = 1011;
 }

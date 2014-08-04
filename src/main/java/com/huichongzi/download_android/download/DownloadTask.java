@@ -24,7 +24,7 @@ class DownloadTask extends Thread {
     // 平均分配后下载量后多余的部分
     private long downloadSizeMore;
     // 分几个线程下载该应用
-    private int threadNum = 5;
+    private int threadNum = 0;
     private long downloadedSize = 0;
     private Downloader downloader = null;
     private boolean isDownMidle = false;
@@ -59,6 +59,10 @@ class DownloadTask extends Thread {
             threadNum = Integer.parseInt(unFinishConf.getValue("threadNum"));
             isDownMidle = true;
         }
+        if(threadNum <= 0){
+            //TODO 根据硬件设置线程数
+            threadNum = 3;
+        }
         logger.info("build DownloadTask url={}, ,tmpPath={}", di.getUrl(), tmpPath);
         SingleDownloadThread[] fds = new SingleDownloadThread[threadNum];
         //记录下载线程数，以便断点续传时能使用正确的线程数下载
@@ -66,7 +70,7 @@ class DownloadTask extends Thread {
         try {
             fileSize = di.getSize();
             File file = new File(tmpPath);
-            downloader.changeState(DownloadOrder.STATE_DOWNING, 0, null, false);
+            downloader.changeState(DownloadOrder.STATE_DOWNING, 0, null, false, true);
 
             //如果是断点续传，首先判断记录的大小与下载信息中大小是否一致，不一致则删除重下
             if (isDownMidle && fileSize != Integer.parseInt(unFinishConf.getValue("fileSize"))) {
@@ -120,15 +124,17 @@ class DownloadTask extends Thread {
                     fds[i].saveProgress(unFinishConf);
                 }
                 int progress = (int) ((downloadedSize * 1.0 + alreadyDownloadSize) / fileSize * 100);
-                di.setProgress(progress);
-                di.setSpeed(downloadedSize - this.downloadedSize);
-                this.downloadedSize = downloadedSize;
-                downloader.changeState(DownloadOrder.STATE_DOWNING, progress, null, false);
-
                 // 下载完毕
                 if (progress == 100) {
                     downloadOver();
+                    continue;
                 }
+                di.setProgress(progress);
+                di.setSpeed(downloadedSize - this.downloadedSize);
+                this.downloadedSize = downloadedSize;
+                downloader.changeState(DownloadOrder.STATE_DOWNING, progress, null, false, true);
+
+
                 //当下载大小超过2M，记录已下载大小，将记录的下载信息保持至文件。更新数据库
                 if (downloadedSize / (1024 * 1024 * 2 * count) >= 1) {
                     unFinishConf.put("downloadedSize", downloadedSize + alreadyDownloadSize + "");
@@ -140,7 +146,7 @@ class DownloadTask extends Thread {
                 sleep(1000);
             }
         } catch (Exception e) {
-            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true);
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true, true);
         }
 
     }
@@ -155,13 +161,13 @@ class DownloadTask extends Thread {
         //验证md5
         if ((di.getCheckMode() & DownloadOrder.CHECKMODE_MD5_END) != 0 && !checkMd5(downloadFile)) {
             DownloadUtils.removeFile(di.getPath());
-            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_MD5_ERROR, "已下载文件md5校验失败", true);
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_MD5_ERROR, "已下载文件md5校验失败", true, true);
             return;
         }
         //验证大小
         if ((di.getCheckMode() & DownloadOrder.CHECKMODE_SIZE_END) != 0 && downloadFile.length() != di.getSize()) {
             DownloadUtils.removeFile(di.getPath());
-            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SIZE_ERROR, "已下载文件大小校验失败", true);
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SIZE_ERROR, "已下载文件大小校验失败", true, true);
             return;
         }
         if (tmpPath.endsWith(StorageHandleTask.Unfinished_Sign)) {
@@ -171,7 +177,7 @@ class DownloadTask extends Thread {
             // 更改文件名
             downloadFile.renameTo(toFile);
         }
-        downloader.changeState(DownloadOrder.STATE_SUCCESS, 0, null, true);
+        downloader.changeState(DownloadOrder.STATE_SUCCESS, 0, null, true, true);
     }
 
 

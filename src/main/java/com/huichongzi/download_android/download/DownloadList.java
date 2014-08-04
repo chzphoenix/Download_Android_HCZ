@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
@@ -24,7 +25,6 @@ class DownloadList {
 
     protected static void add(Context context, Downloader down){
         downloadMap.put(down.di.getId(), down);
-        DownloadDao.save(context, down.di);
     }
 
     protected static boolean has(int id){
@@ -51,16 +51,32 @@ class DownloadList {
     }
 
     protected static void remove(Context context, int id){
+        removeFromMap(id);
+        DownloadDao.delete(context, id);
+    }
+
+
+    protected static void removeList(Context context, List<DownloadInfo> infos) {
+        for (DownloadInfo info : infos){
+            removeFromMap(info.getId());
+        }
+        DownloadDao.saveList(context, infos);
+        DownloadDao.deleteList(context, infos);
+    }
+
+
+    private static void removeFromMap(int id){
         if(downloadMap.contains(id)){
             Downloader down = downloadMap.get(id);
             if(down != null && down.di != null){
-                down.changeState(DownloadOrder.STATE_STOP, 0, null, false);
+                down.changeState(DownloadOrder.STATE_STOP, 0, null, false, false);
                 DownloadUtils.removeFile(down.di.getPath());
             }
             downloadMap.remove(id);
         }
-        DownloadDao.delete(context, id);
     }
+
+
 
     protected static Downloader get(int id){
         return downloadMap.get(id);

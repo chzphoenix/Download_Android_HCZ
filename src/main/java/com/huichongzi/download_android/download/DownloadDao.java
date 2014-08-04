@@ -3,11 +3,11 @@ package com.huichongzi.download_android.download;
 import android.content.Context;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.stmt.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,10 +18,25 @@ class DownloadDao {
     private static final Logger logger = LoggerFactory.getLogger(DownloadDao.class);
 
     protected static void delete(Context context, int id){
-        final DBHelper helper = OpenHelperManager.getHelper(context, DBHelper.class);
+        final DownloadDBHelper helper = DownloadDBHelper.getHelper(context);
         try {
-            final Dao<DownloadInfo, String> dao = helper.getDownloadDao();
-            dao.deleteById(id + "");
+            final Dao<DownloadInfo, Integer> dao = helper.getDownloadDao();
+            dao.deleteById(id);
+        }
+        catch (SQLException e){
+            logger.error("delete failed, {}", e.getMessage());
+        }finally {
+            OpenHelperManager.releaseHelper();
+        }
+    }
+
+    protected static void deleteList(Context context, List<DownloadInfo> infos){
+        final DownloadDBHelper helper = DownloadDBHelper.getHelper(context);
+        try {
+            final Dao<DownloadInfo, Integer> dao = helper.getDownloadDao();
+            for(DownloadInfo info : infos) {
+                dao.delete(info);
+            }
         }
         catch (SQLException e){
             logger.error("delete failed, {}", e.getMessage());
@@ -31,9 +46,9 @@ class DownloadDao {
     }
 
     protected static void save(Context context, DownloadInfo info){
-        final DBHelper helper = OpenHelperManager.getHelper(context, DBHelper.class);
+        final DownloadDBHelper helper = DownloadDBHelper.getHelper(context);
         try {
-            final Dao<DownloadInfo, String> dao = helper.getDownloadDao();
+            final Dao<DownloadInfo, Integer> dao = helper.getDownloadDao();
             dao.createOrUpdate(info);
         }
         catch (SQLException e){
@@ -43,17 +58,35 @@ class DownloadDao {
         }
     }
 
-    protected static List<DownloadInfo> getList(Context context, String group, boolean isDowned) throws DownloadDBException{
-        final DBHelper helper = OpenHelperManager.getHelper(context, DBHelper.class);
-        List<DownloadInfo> list;
+
+    protected static void saveList(Context context, List<DownloadInfo> infos){
+        final DownloadDBHelper helper = DownloadDBHelper.getHelper(context);
         try {
-            final Dao<DownloadInfo, String> dao = helper.getDownloadDao();
+            final Dao<DownloadInfo, Integer> dao = helper.getDownloadDao();
+            for(DownloadInfo info : infos) {
+                dao.createOrUpdate(info);
+            }
+        }
+        catch (SQLException e){
+            logger.error("add failed, {}", e.getMessage());
+        }finally {
+            OpenHelperManager.releaseHelper();
+        }
+    }
+
+    protected static List<DownloadInfo> getList(Context context, String group, boolean isDowned) throws DownloadDBException{
+        final DownloadDBHelper helper = DownloadDBHelper.getHelper(context);
+        try {
+            final Dao<DownloadInfo, Integer> dao = helper.getDownloadDao();
+            QueryBuilder<DownloadInfo, Integer> qb = dao.queryBuilder();
+            qb.where().eq("group", group).and();
             if(isDowned){
-                list = dao.queryBuilder().where().eq("group", group).and().eq("state", DownloadOrder.STATE_SUCCESS).query();
+                qb.where().eq("state", DownloadOrder.STATE_SUCCESS);
             }
             else{
-                list = dao.queryBuilder().where().eq("group", group).and().ne("state", DownloadOrder.STATE_SUCCESS).query();
+                qb.where().ne("state", DownloadOrder.STATE_SUCCESS);
             }
+            List<DownloadInfo> list = qb.query();
             return list;
         }
         catch (SQLException e){

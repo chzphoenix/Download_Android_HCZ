@@ -351,19 +351,19 @@ public class DownloadInfo implements Serializable{
      */
     public void checkIllegal() throws IllegalParamsException{
         if(id == 0){
-            throw new IllegalParamsException("id", "must != 0");
+            throw new IllegalParamsException(name + ":id", "must != 0");
         }
         if(downDir == null || downDir.equals("")){
-            throw new IllegalParamsException("downDir", "must not null");
+            throw new IllegalParamsException(name + ":downDir", "must not null");
         }
         if(url == null || url.equals("")){
-            throw new IllegalParamsException("url", "must not nul");
+            throw new IllegalParamsException(name + ":url", "must not nul");
         }
         if((checkMode & DownloadOrder.CHECKMODE_SIZE_START) == 1 && size <= 0){
-            throw new IllegalParamsException("checkMode", "if check file size before download, 'size' must > 0");
+            throw new IllegalParamsException(name + ":checkMode", "if check file size before download, 'size' must > 0");
         }
         if((checkMode & DownloadOrder.CHECKMODE_MD5_END) == 1 && (md5 == null || md5.equals(""))){
-            throw new IllegalParamsException("checkMode", "if check file md5 after download, 'md5' must not null");
+            throw new IllegalParamsException(name + ":checkMode", "if check file md5 after download, 'md5' must not null");
         }
     }
 

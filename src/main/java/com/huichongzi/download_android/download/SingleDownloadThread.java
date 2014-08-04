@@ -96,7 +96,7 @@ class SingleDownloadThread extends Thread {
                     Thread.sleep(SLEEP_TIME);
                 } catch (InterruptedException e) {
                     logger.error("{} thread {} -> download Interrupt error:{}", di.getName(), threadId, e.getMessage());
-                    downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true);
+                    downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true, true);
                 }
             }
             logger.info("{} thread {} -> Total downloadsize: {}", di.getName(), threadId, downloadSize);
@@ -104,18 +104,18 @@ class SingleDownloadThread extends Thread {
             fos.close();
         } catch (SocketTimeoutException e) {
             logger.error("{} thread {} -> download SocketTimeoutException:{}", di.getName(), threadId, e.getMessage());
-            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true);
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true, true);
         } catch (IOException e) {
             if(context != null && (!DownloadUtils.isNetAlive(context) || !DownloadUtils.isSdcardMount())){
-                downloader.changeState(DownloadOrder.STATE_WAIT_RECONN, 0, null, false);
+                downloader.changeState(DownloadOrder.STATE_WAIT_RECONN, 0, null, false, true);
             }
             else{
                 logger.error("{} thread {} -> download IOException:{}", di.getName(), threadId, e.getMessage());
-                downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true);
+                downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true, true);
             }
         } catch (Exception e) {
             logger.error("{} thread {} -> download error:{}", di.getName(), threadId, e.getMessage());
-            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true);
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true, true);
         }
     }
 

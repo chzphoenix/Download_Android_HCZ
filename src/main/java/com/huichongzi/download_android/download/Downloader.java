@@ -1,5 +1,6 @@
 package com.huichongzi.download_android.download;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import android.content.Context;
@@ -43,10 +44,7 @@ public class Downloader {
         StorageHandleTask sh = new StorageHandleTask(di, new StorageListener() {
             public void onAlreadyDownload(String path) {
                 logger.warn("{} already exists in {}", di.getName(), path);
-                if (!DownloadList.has(di.getId())) {
-                    changeState(DownloadOrder.STATE_SUCCESS, 0, null, true);
-                    DownloadList.add(context, Downloader.this);
-                }
+                changeState(DownloadOrder.STATE_SUCCESS, 0, null, true, true);
             }
 
             public void onDownloadNotFinished(String path) {
@@ -62,28 +60,28 @@ public class Downloader {
             public void onStorageNotEnough(long softSize, long avilableSize) {
                 logger.error("{} not enough size, sdsize={}", di.getName(), avilableSize);
                 String msg = "storage not enough";
-                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_STORAGE_NOT_ENOUPH, msg, true);
+                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_STORAGE_NOT_ENOUPH, msg, true, true);
             }
 
             public void onStorageNotMount(String path) {
                 logger.error("{} sdcard not mounted", di.getName());
                 String msg = "sdcard not mounted";
-                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SDCARD_UNMOUNT, msg, true);
+                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SDCARD_UNMOUNT, msg, true, true);
             }
 
             public void onDownloadUrlConnectError(String msg) {
                 logger.error("{} not connect to {}", di.getName(), di.getUrl());
-                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_URL_UNCONNECT, msg, true);
+                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_URL_UNCONNECT, msg, true, true);
             }
 
             public void onFileSizeError() {
                 logger.error("{} file size is diff of {}", di.getName(), di.getUrl());
-                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SIZE_ERROR, "file size is diff", true);
+                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SIZE_ERROR, "file size is diff", true, true);
             }
 
             public void onCreateFailed(String msg) {
                 logger.error("{} create tmp file failed", di.getName());
-                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_CREATE_TMPFILE, msg, true);
+                changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_CREATE_TMPFILE, msg, true, true);
             }
         });
         sh.start();
@@ -108,10 +106,13 @@ public class Downloader {
      * @param code 如果状态为失败，则为失败码；如果状态为下载中，则为进度值。其他无意义
      * @param msg 如果状态为失败，则为失败信息，其他无意义
      * @param isNeedRefresh 是否刷新下载列表，启动其他等待的任务
+     * @param isNeedSave 是否保存数据
      */
-    protected void changeState(int state, int code , String msg, boolean isNeedRefresh) {
+    protected void changeState(int state, int code , String msg, boolean isNeedRefresh, boolean isNeedSave) {
         di.setState(state);
-        DownloadDao.save(context, di);
+        if(isNeedSave) {
+            DownloadDao.save(context, di);
+        }
         if(isNeedRefresh){
             DownloadList.refresh(context, 0);
         }
@@ -140,8 +141,8 @@ public class Downloader {
         if(context == null){
             throw new IllegalParamsException("context", "must not null");
         }
-        if(id <= 0){
-            throw new IllegalParamsException("id", "must > 0");
+        if(id == 0){
+            throw new IllegalParamsException("id", "must <> 0");
         }
         if (DownloadList.has(id)) {
             Intent intent = new Intent(context, DownloadService.class);
@@ -170,7 +171,7 @@ public class Downloader {
         }
             Intent intent = new Intent(context, DownloadService.class);
             intent.putExtra("action", DownloadOrder.ACTION_PAUSE_IDS);
-            intent.putExtra("ids", ids.toArray());
+            intent.putExtra("ids", getIds(ids));
             context.startService(intent);
     }
 
@@ -208,8 +209,8 @@ public class Downloader {
         if(context == null){
             throw new IllegalParamsException("context", "must not null");
         }
-        if(id <= 0){
-            throw new IllegalParamsException("id", "must > 0");
+        if(id == 0){
+            throw new IllegalParamsException("id", "must <> 0");
         }
         if (DownloadList.has(id)) {
             Intent intent = new Intent(context, DownloadService.class);
@@ -238,7 +239,7 @@ public class Downloader {
         }
         Intent intent = new Intent(context, DownloadService.class);
         intent.putExtra("action", DownloadOrder.ACTION_RESUME_IDS);
-        intent.putExtra("ids", ids.toArray());
+        intent.putExtra("ids", getIds(ids));
         context.startService(intent);
     }
 
@@ -275,8 +276,8 @@ public class Downloader {
         if(context == null){
             throw new IllegalParamsException("context", "must not null");
         }
-        if(id <= 0){
-            throw new IllegalParamsException("id", "must > 0");
+        if(id == 0){
+            throw new IllegalParamsException("id", "must <> 0");
         }
         if (DownloadList.has(id)) {
             Intent intent = new Intent(context, DownloadService.class);
@@ -305,7 +306,7 @@ public class Downloader {
         }
         Intent intent = new Intent(context, DownloadService.class);
         intent.putExtra("action", DownloadOrder.ACTION_CANCEL_IDS);
-        intent.putExtra("ids", ids.toArray(new Integer[ids.size()]));
+        intent.putExtra("ids", getIds(ids));
         context.startService(intent);
     }
 
@@ -381,6 +382,41 @@ public class Downloader {
         context.startService(intent);
     }
 
+
+
+    /**
+     * 添加下载任务列表
+     *
+     * @param context
+     * @param downloadInfos      下载信息列表
+     * @param handlers   当下载状态改变时会发送Message。Message.what为当前下载状态；Message.arg1在downloading状态下为进度值，在failed状态下为失败代码，其他状态无意义；Message.obj为字符串，在failed状态下为失败信息，其他无意义
+     * @throws IllegalParamsException
+     */
+    public static void addDownloadForList(Context context, List<DownloadInfo> downloadInfos, List<Handler> handlers) throws IllegalParamsException {
+        if(context == null){
+            throw new IllegalParamsException("context", "must not null");
+        }
+        int[] ids = new int[downloadInfos.size()];
+        for(int i = 0; i < downloadInfos.size(); i++) {
+            DownloadInfo downloadInfo = downloadInfos.get(i);
+            downloadInfo.checkIllegal();
+            //检查列表中是否已存在
+            if (DownloadList.has(downloadInfo.getId())) {
+                Message msg = handlers.get(i).obtainMessage(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_ADD_EXIST, 0, downloadInfo.getName());
+                handlers.get(i).handleMessage(msg);
+            }
+            Downloader down = new Downloader(downloadInfo, handlers.get(i));
+            DownloadList.add(context, down);
+            ids[i] = downloadInfo.getId();
+        }
+        Intent intent = new Intent(context, DownloadService.class);
+        intent.putExtra("action", DownloadOrder.ACTION_ADD_LIST);
+        intent.putExtra("ids", ids);
+        context.startService(intent);
+    }
+
+
+
     /**
      * 停止后台的下载服务
      * @param context
@@ -412,6 +448,17 @@ public class Downloader {
      */
     public static void setDownServiceListener(DownServiceListener listener){
         serviceListener = listener;
+    }
+
+
+
+
+    private static int[] getIds(List<Integer> list){
+        int[] ids = new int[list.size()];
+        for(int i = 0; i < list.size(); i++){
+            ids[i] = list.get(i);
+        }
+        return ids;
     }
 
 

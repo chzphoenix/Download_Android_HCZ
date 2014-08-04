@@ -6,6 +6,7 @@ import android.os.IBinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -93,9 +94,33 @@ public class DownloadService extends Service {
             case DownloadOrder.ACTION_CANCEL_IDS:
                 cancelIds(ids);
                 break;
+            case DownloadOrder.ACTION_ADD_LIST:
+                addDowns(ids);
+                break;
         }
         DownloadList.refresh(this, 0);
         return START_NOT_STICKY;
+    }
+
+
+
+    private void addDowns(int[] ids){
+        if(ids == null || ids.length <= 0){
+            return;
+        }
+        List<DownloadInfo> infos = new ArrayList<DownloadInfo>();
+        for(int downId : ids){
+            Downloader downloader = getDownloader(downId);
+            if(downloader == null || downloader.di == null){
+                continue;
+            }
+            if (downloader.di.getState() <= DownloadOrder.STATE_DOWNING || downloader.di.getState() >= DownloadOrder.STATE_SUCCESS) {
+                downloader.di.setState(DownloadOrder.STATE_WAIT_DOWN);
+            }
+            downloader.changeState(downloader.di.getState(), 0, null, false, false);
+            infos.add(downloader.di);
+        }
+        DownloadDao.saveList(this, infos);
     }
 
 
@@ -103,9 +128,16 @@ public class DownloadService extends Service {
         if(ids == null || ids.length <= 0){
             return;
         }
+        List<DownloadInfo> infos = new ArrayList<DownloadInfo>();
         for(int downId : ids){
-            cancelDown(getDownloader(downId));
+            Downloader downloader = getDownloader(downId);
+            if(downloader == null || downloader.di == null){
+                DownloadDao.delete(this, downId);
+                continue;
+            }
+            infos.add(downloader.di);
         }
+        DownloadList.removeList(this, infos);
     }
 
 
@@ -113,9 +145,18 @@ public class DownloadService extends Service {
         if(ids == null || ids.length <= 0){
             return;
         }
+        List<DownloadInfo> downloadInfos = new ArrayList<DownloadInfo>();
         for(int downId : ids){
-            resumeDown(getDownloader(downId));
+            Downloader downloader = getDownloader(downId);
+            if(downloader == null || downloader.di == null){
+                continue;
+            }
+            if (downloader.di.getState() != DownloadOrder.STATE_SUCCESS && downloader.di.getState() != DownloadOrder.STATE_DOWNING && downloader.di.getState() != DownloadOrder.STATE_WAIT_RECONN) {
+                downloader.changeState(DownloadOrder.STATE_WAIT_DOWN, 0, null, false, false);
+                downloadInfos.add(downloader.di);
+            }
         }
+        DownloadDao.saveList(this, downloadInfos);
     }
 
 
@@ -123,22 +164,35 @@ public class DownloadService extends Service {
         if(ids == null || ids.length <= 0){
             return;
         }
+        List<DownloadInfo> downloadInfos = new ArrayList<DownloadInfo>();
         for(int downId : ids){
-            pauseDown(getDownloader(downId));
+            Downloader downloader = getDownloader(downId);
+            if(downloader == null || downloader.di == null){
+                continue;
+            }
+            if (downloader.di.getState() != DownloadOrder.STATE_SUCCESS) {
+                downloader.changeState(DownloadOrder.STATE_PAUSE, 0, null, false, false);
+                downloadInfos.add(downloader.di);
+            }
         }
+        DownloadDao.saveList(this, downloadInfos);
     }
 
     private void cancelGroup(String group, int isDowned){
         if(group == null || group.equals("") || isDowned == -1){
             return;
         }
+        List<DownloadInfo> infos = new ArrayList<DownloadInfo>();
         for(Downloader downloader : DownloadList.downloadMap.values()){
             if(downloader.di.getGroup().equals(group)){
                 if((isDowned == DownloadOrder.STATE_SUCCESS) == (downloader.di.getState() == DownloadOrder.STATE_SUCCESS)){
-                    cancelDown(downloader);
+                    if(downloader.di != null){
+                        infos.add(downloader.di);
+                    }
                 }
             }
         }
+        DownloadList.removeList(this, infos);
     }
 
 
@@ -146,22 +200,32 @@ public class DownloadService extends Service {
         if(group == null || group.equals("")){
             return;
         }
+        List<DownloadInfo> downloadInfos = new ArrayList<DownloadInfo>();
         for(Downloader downloader : DownloadList.downloadMap.values()){
-            if(downloader.di.getGroup().equals(group)){
-                resumeDown(downloader);
+            if(downloader.di != null && downloader.di.getGroup().equals(group)){
+                if (downloader.di.getState() != DownloadOrder.STATE_SUCCESS && downloader.di.getState() != DownloadOrder.STATE_DOWNING && downloader.di.getState() != DownloadOrder.STATE_WAIT_RECONN) {
+                    downloader.changeState(DownloadOrder.STATE_WAIT_DOWN, 0, null, false, false);
+                    downloadInfos.add(downloader.di);
+                }
             }
         }
+        DownloadDao.saveList(this, downloadInfos);
     }
 
     private void pauseGroup(String group){
         if(group == null || group.equals("")){
             return;
         }
+        List<DownloadInfo> downloadInfos = new ArrayList<DownloadInfo>();
         for(Downloader downloader : DownloadList.downloadMap.values()){
-            if(downloader.di.getGroup().equals(group)){
-                pauseDown(downloader);
+            if(downloader.di != null && downloader.di.getGroup().equals(group)){
+                if (downloader.di.getState() != DownloadOrder.STATE_SUCCESS) {
+                    downloader.changeState(DownloadOrder.STATE_PAUSE, 0, null, false, false);
+                    downloadInfos.add(downloader.di);
+                }
             }
         }
+        DownloadDao.saveList(this, downloadInfos);
     }
 
 
@@ -173,15 +237,17 @@ public class DownloadService extends Service {
         if (down.di.getState() <= DownloadOrder.STATE_DOWNING || down.di.getState() >= DownloadOrder.STATE_SUCCESS) {
             down.di.setState(DownloadOrder.STATE_WAIT_DOWN);
         }
-        down.changeState(down.di.getState(), 0, null, false);
+        down.changeState(down.di.getState(), 0, null, false, true);
     }
+
+
 
     private void pauseDown(Downloader down){
         if(down.di == null){
             return;
         }
         if (down.di.getState() != DownloadOrder.STATE_SUCCESS) {
-            down.changeState(DownloadOrder.STATE_PAUSE, 0, null, false);
+            down.changeState(DownloadOrder.STATE_PAUSE, 0, null, false, true);
         }
     }
 
@@ -191,7 +257,7 @@ public class DownloadService extends Service {
             return;
         }
         if (down.di.getState() != DownloadOrder.STATE_SUCCESS && down.di.getState() != DownloadOrder.STATE_DOWNING && down.di.getState() != DownloadOrder.STATE_WAIT_RECONN) {
-            down.changeState(DownloadOrder.STATE_WAIT_DOWN, 0, null, false);
+            down.changeState(DownloadOrder.STATE_WAIT_DOWN, 0, null, false, true);
         }
     }
 
