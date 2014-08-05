@@ -41,6 +41,10 @@ public class DownloadInfo implements Serializable{
     private int progress;
     @DatabaseField
     private String other;
+    @DatabaseField(canBeNull = false)
+    private long createTime;
+    @DatabaseField
+    private long downloadTime;
 
     private long speed;
 
@@ -316,6 +320,23 @@ public class DownloadInfo implements Serializable{
         this.unlimite = unlimite;
     }
 
+    public long getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(long createTime) {
+        this.createTime = createTime;
+    }
+
+    public long getDownloadTime() {
+        return downloadTime;
+    }
+
+    public void setDownloadTime(long downloadTime) {
+        this.downloadTime = downloadTime;
+    }
+
+
     @Override
     public String toString() {
         return "DownloadInfo{" +
@@ -327,6 +348,8 @@ public class DownloadInfo implements Serializable{
                 ", md5='" + ( md5 == null ? "" : md5 ) + '\'' +
                 ", size=" + size +
                 ", other='" + ( other == null ? "" : other ) + '\'' +
+                "createTime='" + createTime + '\'' +
+                "downloadTime='" + downloadTime + '\'' +
                 '}';
     }
 

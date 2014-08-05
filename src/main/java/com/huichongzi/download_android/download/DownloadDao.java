@@ -82,9 +82,11 @@ class DownloadDao {
             qb.where().eq("group", group).and();
             if(isDowned){
                 qb.where().eq("state", DownloadOrder.STATE_SUCCESS);
+                qb.orderBy("downloadTime", true);
             }
             else{
                 qb.where().ne("state", DownloadOrder.STATE_SUCCESS);
+                qb.orderBy("createTime", true);
             }
             List<DownloadInfo> list = qb.query();
             return list;

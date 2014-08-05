@@ -70,7 +70,7 @@ class DownloadTask extends Thread {
         try {
             fileSize = di.getSize();
             File file = new File(tmpPath);
-            downloader.changeState(DownloadOrder.STATE_DOWNING, 0, null, false, true);
+            downloader.changeState(DownloadOrder.STATE_DOWNING, di.getProgress(), null, false, true);
 
             //如果是断点续传，首先判断记录的大小与下载信息中大小是否一致，不一致则删除重下
             if (isDownMidle && fileSize != Integer.parseInt(unFinishConf.getValue("fileSize"))) {
@@ -108,13 +108,14 @@ class DownloadTask extends Thread {
                 fdt.start();
                 fds[i] = fdt;
             }
-            int count = 1;
             long alreadyDownloadSize = 0;
             //如果是断点续传，读取已下载的大小
             if (isDownMidle) {
                 alreadyDownloadSize = Long.parseLong(unFinishConf.getValue("downloadedSize"));
             }
+
             //循环监视各个子线程。
+            int saveCount = 0;
             while (di.getState() == DownloadOrder.STATE_DOWNING) {
                 // 先把整除的余数搞定
                 long downloadedSize = downloadSizeMore;
@@ -132,15 +133,16 @@ class DownloadTask extends Thread {
                 di.setProgress(progress);
                 di.setSpeed(downloadedSize - this.downloadedSize);
                 this.downloadedSize = downloadedSize;
-                downloader.changeState(DownloadOrder.STATE_DOWNING, progress, null, false, true);
+                downloader.changeState(DownloadOrder.STATE_DOWNING, progress, null, false, false);
 
 
-                //当下载大小超过2M，记录已下载大小，将记录的下载信息保持至文件。更新数据库
-                if (downloadedSize / (1024 * 1024 * 2 * count) >= 1) {
+                //每隔5秒，记录已下载大小，将记录的下载信息保持至文件。更新数据库
+                saveCount++;
+                if (saveCount % 5 == 0) {
                     unFinishConf.put("downloadedSize", downloadedSize + alreadyDownloadSize + "");
                     unFinishConf.write();
-                    count++;
                     DownloadDao.save(context, di);
+                    saveCount = 0;
                 }
                 // 休息1秒后再读取下载进度
                 sleep(1000);
@@ -177,6 +179,7 @@ class DownloadTask extends Thread {
             // 更改文件名
             downloadFile.renameTo(toFile);
         }
+        di.setDownloadTime(System.currentTimeMillis());
         downloader.changeState(DownloadOrder.STATE_SUCCESS, 0, null, true, true);
     }
 

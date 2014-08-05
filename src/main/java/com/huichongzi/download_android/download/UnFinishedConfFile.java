@@ -92,7 +92,7 @@ class UnFinishedConfFile {
 	}
 
     protected void delete(){
-		if(file.exists() && file.isFile()){
+		if(file.exists()){
 			file.delete();
 		}
 	}

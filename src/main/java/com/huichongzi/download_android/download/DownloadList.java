@@ -24,6 +24,7 @@ class DownloadList {
 
 
     protected static void add(Context context, Downloader down){
+        down.di.setCreateTime(System.currentTimeMillis());
         downloadMap.put(down.di.getId(), down);
     }
 
@@ -60,13 +61,12 @@ class DownloadList {
         for (DownloadInfo info : infos){
             removeFromMap(info.getId());
         }
-        DownloadDao.saveList(context, infos);
         DownloadDao.deleteList(context, infos);
     }
 
 
     private static void removeFromMap(int id){
-        if(downloadMap.contains(id)){
+        if(downloadMap.containsKey(id)){
             Downloader down = downloadMap.get(id);
             if(down != null && down.di != null){
                 down.changeState(DownloadOrder.STATE_STOP, 0, null, false, false);

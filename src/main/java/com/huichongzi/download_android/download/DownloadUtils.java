@@ -85,10 +85,10 @@ class DownloadUtils {
         File tempFile = new File(path + StorageHandleTask.Unfinished_Sign);
         // 下载完成
         if (file.exists()) {
-            file.deleteOnExit();
+            file.delete();
             // 下载带但没有完成
         } else if (tempFile.exists()) {
-            tempFile.deleteOnExit();
+            tempFile.delete();
         }
         new UnFinishedConfFile(file.getAbsolutePath()).delete();
     }
