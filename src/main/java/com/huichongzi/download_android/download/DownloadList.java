@@ -9,6 +9,7 @@ import java.io.File;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 下载列表类
@@ -19,7 +20,7 @@ class DownloadList {
     // 最大允许启动下载的个数
     protected static final int Max_Allow_Download = 1;
     // 当前下载的存储表
-    protected static Hashtable<Integer, Downloader> downloadMap = new Hashtable<Integer, Downloader>();
+    protected static ConcurrentHashMap<Integer, Downloader> downloadMap = new ConcurrentHashMap<Integer, Downloader>();
 
 
     protected static void add(Downloader down){
@@ -35,7 +36,7 @@ class DownloadList {
                 downloadMap.remove(id);
                 return false;
             }
-            //清除文件被删除的无效di
+            //清除文件被删除的无效下载信息
             if(down.di.getState() == DownloadOrder.STATE_SUCCESS){
                 File file = new File(down.di.getPath());
                 if(!file.exists() || !file.isFile()){

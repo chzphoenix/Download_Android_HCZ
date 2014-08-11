@@ -50,7 +50,7 @@ public class DownloadService extends Service {
             DownloadManager.serviceListener.onServiceStart(this);
         }
         int mode = intent.getIntExtra("mode", 0);
-        DownloadList.refresh(this, 0);
+        DownloadList.refresh(this, mode);
         return START_NOT_STICKY;
     }
 }

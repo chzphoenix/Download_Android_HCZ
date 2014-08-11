@@ -39,9 +39,9 @@ public class DownloadManager {
             if (down.di.getState() != DownloadOrder.STATE_SUCCESS) {
                 down.changeState(DownloadOrder.STATE_PAUSE, 0, "", false, false);
             }
-            DownloadDao.save(context, down.di);
             Intent intent = new Intent(context, DownloadService.class);
             context.startService(intent);
+            DownloadDao.save(context, down.di);
         } else {
             throw new DownloadNotExistException();
         }
@@ -74,10 +74,10 @@ public class DownloadManager {
                 downloadInfos.add(downloader.di);
             }
         }
-        DownloadDao.saveList(context, downloadInfos);
-
-        Intent intent = new Intent(context, DownloadService.class);
+       Intent intent = new Intent(context, DownloadService.class);
         context.startService(intent);
+
+        DownloadDao.saveList(context, downloadInfos);
     }
 
 
@@ -105,10 +105,10 @@ public class DownloadManager {
                 }
             }
         }
-        DownloadDao.saveList(context, downloadInfos);
-
         Intent intent = new Intent(context, DownloadService.class);
         context.startService(intent);
+
+        DownloadDao.saveList(context, downloadInfos);
     }
 
 
@@ -133,9 +133,9 @@ public class DownloadManager {
             if (down.di.getState() != DownloadOrder.STATE_SUCCESS && down.di.getState() != DownloadOrder.STATE_DOWNING && down.di.getState() != DownloadOrder.STATE_WAIT_RECONN) {
                 down.changeState(DownloadOrder.STATE_WAIT_DOWN, 0, "", false, false);
             }
-            DownloadDao.save(context, down.di);
             Intent intent = new Intent(context, DownloadService.class);
             context.startService(intent);
+            DownloadDao.save(context, down.di);
         } else {
             throw new DownloadNotExistException();
         }
@@ -168,10 +168,10 @@ public class DownloadManager {
                 downloadInfos.add(downloader.di);
             }
         }
-        DownloadDao.saveList(context, downloadInfos);
-
         Intent intent = new Intent(context, DownloadService.class);
         context.startService(intent);
+
+        DownloadDao.saveList(context, downloadInfos);
     }
 
     /**
@@ -198,10 +198,10 @@ public class DownloadManager {
                 }
             }
         }
-        DownloadDao.saveList(context, downloadInfos);
-
         Intent intent = new Intent(context, DownloadService.class);
         context.startService(intent);
+
+        DownloadDao.saveList(context, downloadInfos);
     }
 
 
