@@ -19,7 +19,7 @@ class DownloadDBHelper extends OrmLiteSqliteOpenHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(DownloadDBHelper.class);
 
-    private static final String DOWNLOAD_DB_NAME = "download.db";
+    private static final String DOWNLOAD_DB_NAME = "download.dao";
     private static final int DOWNLOAD_DB_VERSION = 1;
 
     private static final Class<?>[] DATA_CLASSES = {DownloadInfo.class};

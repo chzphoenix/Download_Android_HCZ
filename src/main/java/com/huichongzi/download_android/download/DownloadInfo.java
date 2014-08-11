@@ -370,9 +370,9 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 检查此bean信息是否有异常
-     * @throws IllegalParamsException
+     * @throws com.ifeng.video.core.exception.IllegalParamsException
      */
-    public void checkIllegal() throws IllegalParamsException{
+    public void checkIllegal() throws IllegalParamsException {
         if(id == 0){
             throw new IllegalParamsException(name + ":id", "must != 0");
         }

@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
@@ -23,7 +22,7 @@ class DownloadList {
     protected static Hashtable<Integer, Downloader> downloadMap = new Hashtable<Integer, Downloader>();
 
 
-    protected static void add(Context context, Downloader down){
+    protected static void add(Downloader down){
         down.di.setCreateTime(System.currentTimeMillis());
         downloadMap.put(down.di.getId(), down);
     }
@@ -51,17 +50,17 @@ class DownloadList {
         }
     }
 
-    protected static void remove(Context context, int id){
-        removeFromMap(id);
+    protected static void remove(Context context, int id) throws DownloadDBException{
         DownloadDao.delete(context, id);
+        removeFromMap(id);
     }
 
 
-    protected static void removeList(Context context, List<DownloadInfo> infos) {
+    protected static void removeList(Context context, List<DownloadInfo> infos) throws DownloadDBException{
+        DownloadDao.deleteList(context, infos);
         for (DownloadInfo info : infos){
             removeFromMap(info.getId());
         }
-        DownloadDao.deleteList(context, infos);
     }
 
 
@@ -85,7 +84,7 @@ class DownloadList {
 
 
 
-    protected static List<DownloadInfo> getDownloadList(Context context, String group, boolean isDowned) throws DownloadDBException{
+    protected static List<DownloadInfo> getDownloadList(Context context, String group, boolean isDowned) throws DownloadDBException {
         List<DownloadInfo> list = DownloadDao.getList(context, group, isDowned);
         if(isDowned){
             //如果是下载完成的，需要检查文件是否已被删除
@@ -93,7 +92,7 @@ class DownloadList {
                 File file = new File(di.getPath());
                 if(!file.exists() || !file.isFile()){
                     list.remove(di);
-                    DownloadDao.delete(context, di.getId());
+                    DownloadDao.deleteIgnoreException(context, di.getId());
                 }
             }
         }
@@ -113,6 +112,7 @@ class DownloadList {
         //先遍历重启断连的任务
         for (Iterator<Downloader> iter = downloadMap.values().iterator(); iter.hasNext(); ) {
             Downloader down = iter.next();
+            down.setContext(context);
             if (down.di.getState() == DownloadOrder.STATE_DOWNING && !down.di.isUnlimite()) {
                 count++;
             }
@@ -126,7 +126,7 @@ class DownloadList {
                     }
                 }
             }
-            DownloadDao.save(context, down.di);
+            DownloadDao.saveIgnoreException(context, down.di);
         }
         //如果未达到下载限制，则遍历启动等待任务
         if(count < Max_Allow_Download) {
@@ -141,7 +141,7 @@ class DownloadList {
                         }
                     }
                 }
-                DownloadDao.save(context, down.di);
+                DownloadDao.saveIgnoreException(context, down.di);
             }
         }
         logger.debug("download task count: {}", count);

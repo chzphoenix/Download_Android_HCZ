@@ -21,8 +21,8 @@ public class DownloadService extends Service {
     public void onCreate() {
         super.onCreate();
         DownloadReceiver.addReceiver(this);
-        if(Downloader.serviceListener != null){
-            Downloader.serviceListener.onServiceCreate(this);
+        if(DownloadManager.serviceListener != null){
+            DownloadManager.serviceListener.onServiceCreate(this);
         }
     }
 
@@ -30,8 +30,8 @@ public class DownloadService extends Service {
     @Override
     public void onDestroy() {
         DownloadReceiver.removeReceiver(this);
-        if(Downloader.serviceListener != null){
-            Downloader.serviceListener.onServiceDestroy(this);
+        if(DownloadManager.serviceListener != null){
+            DownloadManager.serviceListener.onServiceDestroy(this);
         }
         super.onDestroy();
     }
@@ -46,238 +46,11 @@ public class DownloadService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        if(Downloader.serviceListener != null){
-            Downloader.serviceListener.onServiceStart(this);
+        if(DownloadManager.serviceListener != null){
+            DownloadManager.serviceListener.onServiceStart(this);
         }
-        int action = intent.getIntExtra("action", 0);
-        if (action == 0) {
-            logger.error("start service failed, action is wrong");
-            return START_NOT_STICKY;
-        }
-
-        int id = intent.getIntExtra("id", 0);
-        Downloader down = getDownloader(id);
-
-        String group = intent.getStringExtra("group");
-
-        int[] ids = intent.getIntArrayExtra("ids");
-
-        switch (action) {
-            case DownloadOrder.ACTION_ADD:
-                addDown(down);
-                break;
-            case DownloadOrder.ACTION_PAUSE:
-                pauseDown(down);
-                break;
-            case DownloadOrder.ACTION_RESUME:
-                resumeDown(down);
-                break;
-            case DownloadOrder.ACTION_CANCEL:
-                cancelDown(down);
-                break;
-            case DownloadOrder.ACTION_PAUSE_GROUP:
-                pauseGroup(group);
-                break;
-            case DownloadOrder.ACTION_RESUME_GROUP:
-                resumeGroup(group);
-                break;
-            case DownloadOrder.ACTION_CANCEL_GROUP:
-                int isDowned = intent.getIntExtra("isDowned", -1);
-                cancelGroup(group, isDowned);
-                break;
-            case DownloadOrder.ACTION_PAUSE_IDS:
-                pauseIds(ids);
-                break;
-            case DownloadOrder.ACTION_RESUME_IDS:
-                resumeIds(ids);
-                break;
-            case DownloadOrder.ACTION_CANCEL_IDS:
-                cancelIds(ids);
-                break;
-            case DownloadOrder.ACTION_ADD_LIST:
-                addDowns(ids);
-                break;
-        }
+        int mode = intent.getIntExtra("mode", 0);
         DownloadList.refresh(this, 0);
         return START_NOT_STICKY;
     }
-
-
-
-    private void addDowns(int[] ids){
-        if(ids == null || ids.length <= 0){
-            return;
-        }
-        List<DownloadInfo> infos = new ArrayList<DownloadInfo>();
-        for(int downId : ids){
-            Downloader downloader = getDownloader(downId);
-            if(downloader == null || downloader.di == null){
-                continue;
-            }
-            if (downloader.di.getState() <= DownloadOrder.STATE_DOWNING || downloader.di.getState() >= DownloadOrder.STATE_SUCCESS) {
-                downloader.di.setState(DownloadOrder.STATE_WAIT_DOWN);
-            }
-            downloader.changeState(downloader.di.getState(), 0, null, false, false);
-            infos.add(downloader.di);
-        }
-        DownloadDao.saveList(this, infos);
-    }
-
-
-    private void cancelIds(int[] ids){
-        if(ids == null || ids.length <= 0){
-            return;
-        }
-        List<DownloadInfo> infos = new ArrayList<DownloadInfo>();
-        for(int downId : ids){
-            Downloader downloader = getDownloader(downId);
-            if(downloader == null || downloader.di == null){
-                DownloadDao.delete(this, downId);
-                continue;
-            }
-            infos.add(downloader.di);
-        }
-        DownloadList.removeList(this, infos);
-    }
-
-
-    private void resumeIds(int[] ids){
-        if(ids == null || ids.length <= 0){
-            return;
-        }
-        List<DownloadInfo> downloadInfos = new ArrayList<DownloadInfo>();
-        for(int downId : ids){
-            Downloader downloader = getDownloader(downId);
-            if(downloader == null || downloader.di == null){
-                continue;
-            }
-            if (downloader.di.getState() != DownloadOrder.STATE_SUCCESS && downloader.di.getState() != DownloadOrder.STATE_DOWNING && downloader.di.getState() != DownloadOrder.STATE_WAIT_RECONN) {
-                downloader.changeState(DownloadOrder.STATE_WAIT_DOWN, 0, null, false, false);
-                downloadInfos.add(downloader.di);
-            }
-        }
-        DownloadDao.saveList(this, downloadInfos);
-    }
-
-
-    private void pauseIds(int[] ids){
-        if(ids == null || ids.length <= 0){
-            return;
-        }
-        List<DownloadInfo> downloadInfos = new ArrayList<DownloadInfo>();
-        for(int downId : ids){
-            Downloader downloader = getDownloader(downId);
-            if(downloader == null || downloader.di == null){
-                continue;
-            }
-            if (downloader.di.getState() != DownloadOrder.STATE_SUCCESS) {
-                downloader.changeState(DownloadOrder.STATE_PAUSE, 0, null, false, false);
-                downloadInfos.add(downloader.di);
-            }
-        }
-        DownloadDao.saveList(this, downloadInfos);
-    }
-
-    private void cancelGroup(String group, int isDowned){
-        if(group == null || group.equals("") || isDowned == -1){
-            return;
-        }
-        List<DownloadInfo> infos = new ArrayList<DownloadInfo>();
-        for(Downloader downloader : DownloadList.downloadMap.values()){
-            if(downloader.di.getGroup().equals(group)){
-                if((isDowned == DownloadOrder.STATE_SUCCESS) == (downloader.di.getState() == DownloadOrder.STATE_SUCCESS)){
-                    if(downloader.di != null){
-                        infos.add(downloader.di);
-                    }
-                }
-            }
-        }
-        DownloadList.removeList(this, infos);
-    }
-
-
-    private void resumeGroup(String group){
-        if(group == null || group.equals("")){
-            return;
-        }
-        List<DownloadInfo> downloadInfos = new ArrayList<DownloadInfo>();
-        for(Downloader downloader : DownloadList.downloadMap.values()){
-            if(downloader.di != null && downloader.di.getGroup().equals(group)){
-                if (downloader.di.getState() != DownloadOrder.STATE_SUCCESS && downloader.di.getState() != DownloadOrder.STATE_DOWNING && downloader.di.getState() != DownloadOrder.STATE_WAIT_RECONN) {
-                    downloader.changeState(DownloadOrder.STATE_WAIT_DOWN, 0, null, false, false);
-                    downloadInfos.add(downloader.di);
-                }
-            }
-        }
-        DownloadDao.saveList(this, downloadInfos);
-    }
-
-    private void pauseGroup(String group){
-        if(group == null || group.equals("")){
-            return;
-        }
-        List<DownloadInfo> downloadInfos = new ArrayList<DownloadInfo>();
-        for(Downloader downloader : DownloadList.downloadMap.values()){
-            if(downloader.di != null && downloader.di.getGroup().equals(group)){
-                if (downloader.di.getState() != DownloadOrder.STATE_SUCCESS) {
-                    downloader.changeState(DownloadOrder.STATE_PAUSE, 0, null, false, false);
-                    downloadInfos.add(downloader.di);
-                }
-            }
-        }
-        DownloadDao.saveList(this, downloadInfos);
-    }
-
-
-
-    private void addDown(Downloader down){
-        if(down.di == null){
-            return;
-        }
-        if (down.di.getState() <= DownloadOrder.STATE_DOWNING || down.di.getState() >= DownloadOrder.STATE_SUCCESS) {
-            down.di.setState(DownloadOrder.STATE_WAIT_DOWN);
-        }
-        down.changeState(down.di.getState(), 0, null, false, true);
-    }
-
-
-
-    private void pauseDown(Downloader down){
-        if(down.di == null){
-            return;
-        }
-        if (down.di.getState() != DownloadOrder.STATE_SUCCESS) {
-            down.changeState(DownloadOrder.STATE_PAUSE, 0, null, false, true);
-        }
-    }
-
-
-    private void resumeDown(Downloader down){
-        if(down.di == null){
-            return;
-        }
-        if (down.di.getState() != DownloadOrder.STATE_SUCCESS && down.di.getState() != DownloadOrder.STATE_DOWNING && down.di.getState() != DownloadOrder.STATE_WAIT_RECONN) {
-            down.changeState(DownloadOrder.STATE_WAIT_DOWN, 0, null, false, true);
-        }
-    }
-
-
-    private void cancelDown(Downloader down){
-        if(down.di == null){
-            return;
-        }
-        DownloadList.remove(this, down.di.getId());
-    }
-
-
-    private Downloader getDownloader(int id){
-        if (!DownloadList.has(id)) {
-            logger.error("{} is not exist.", id);
-            return null;
-        }
-        Downloader down = DownloadList.get(id);
-        down.setContext(this);
-        return down;
-    }
-
 }

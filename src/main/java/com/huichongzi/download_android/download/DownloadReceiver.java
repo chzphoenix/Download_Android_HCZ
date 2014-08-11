@@ -28,7 +28,9 @@ class DownloadReceiver extends BroadcastReceiver{
         if(action.equals(Intent.ACTION_MEDIA_MOUNTED)){
             logger.debug("sdcard mounted");
             if(isNetAlive){
-                DownloadList.refresh(context, DownloadOrder.RECONNMODE_SDCARD);
+                Intent sintent = new Intent(context, DownloadService.class);
+                sintent.putExtra("mode", DownloadOrder.RECONNMODE_SDCARD);
+                context.startService(sintent);
                 isSdcardMounted = true;
             }
         }
@@ -36,7 +38,9 @@ class DownloadReceiver extends BroadcastReceiver{
             if(DownloadUtils.isNetAlive(context)){
                 logger.debug("net connected");
                 if(isSdcardMounted){
-                    DownloadList.refresh(context, DownloadOrder.RECONNMODE_NET);
+                    Intent sintent = new Intent(context, DownloadService.class);
+                    sintent.putExtra("mode", DownloadOrder.RECONNMODE_NET);
+                    context.startService(sintent);
                     isNetAlive = true;
                 }
             }
