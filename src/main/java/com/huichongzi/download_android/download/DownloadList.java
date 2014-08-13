@@ -105,7 +105,7 @@ class DownloadList {
      * 刷新下载列表，未到下载上限且有等待下载时自动下载
      * @param mode 重连模式.如果不为0，则先启动该模式的重连任务;为0，则先启动所有断连任务。再启动其他任务
      */
-    protected static void refresh(Context context, int mode){
+    protected synchronized static void refresh(Context context, int mode){
         if(!DownloadUtils.isNetAlive(context) || !DownloadUtils.isSdcardMount()){
             return;
         }
