@@ -37,5 +37,5 @@ public class MyActivity extends Activity {
             e.printStackTrace();
         }
 
-      }
+    }
 }

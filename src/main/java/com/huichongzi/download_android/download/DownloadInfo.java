@@ -39,12 +39,38 @@ public class DownloadInfo implements Serializable{
     private boolean unlimite;
     @DatabaseField
     private int progress;
-    @DatabaseField
-    private String other;
     @DatabaseField(canBeNull = false)
     private long createTime;
     @DatabaseField
     private long downloadTime;
+    /** 扩展int字段 **/
+    @DatabaseField
+    public int arg1;
+    /** 扩展int字段 **/
+    @DatabaseField
+    public int arg2;
+    /** 扩展int字段 **/
+    @DatabaseField
+    public int arg3;
+    /** 扩展string字段 **/
+    @DatabaseField
+    public String str1;
+    /** 扩展string字段 **/
+    @DatabaseField
+    public String str2;
+    /** 扩展string字段 **/
+    @DatabaseField
+    public String str3;
+    /** 扩展Serializable字段 **/
+    @DatabaseField
+    public Serializable obj1;
+    /** 扩展Serializable字段 **/
+    @DatabaseField
+    public Serializable obj2;
+    /** 扩展Serializable字段 **/
+    @DatabaseField
+    public Serializable obj3;
+
 
     private long speed;
 
@@ -285,23 +311,7 @@ public class DownloadInfo implements Serializable{
         this.progress = progress;
     }
 
-    /**
-     * 获取扩展信息
-     * @return string
-     */
-    public String getOther() {
-        return other;
-    }
 
-
-    /**
-     * 设置扩展信息
-     *
-     * @param other 扩展信息，如果是多个信息，建议使用分号进行分割
-     */
-    public void setOther(String other) {
-        this.other = other;
-    }
 
     /**
      * 下载是否受限
@@ -347,7 +357,6 @@ public class DownloadInfo implements Serializable{
                 ", url='" + url + '\'' +
                 ", md5='" + ( md5 == null ? "" : md5 ) + '\'' +
                 ", size=" + size +
-                ", other='" + ( other == null ? "" : other ) + '\'' +
                 "createTime='" + createTime + '\'' +
                 "downloadTime='" + downloadTime + '\'' +
                 '}';
@@ -370,7 +379,7 @@ public class DownloadInfo implements Serializable{
 
     /**
      * 检查此bean信息是否有异常
-     * @throws com.ifeng.video.core.exception.IllegalParamsException
+     * @throws IllegalParamsException
      */
     public void checkIllegal() throws IllegalParamsException {
         if(id == 0){
