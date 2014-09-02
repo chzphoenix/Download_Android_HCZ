@@ -109,6 +109,9 @@ class DownloadList {
         if(!DownloadUtils.isNetAlive(context) || !DownloadUtils.isSdcardMount()){
             return;
         }
+        if(!DownloadManager.isDownloadServiceOn){
+            return;
+        }
         int count = 0;
         //先遍历重启断连的任务
         for (Iterator<Downloader> iter = downloadMap.values().iterator(); iter.hasNext(); ) {

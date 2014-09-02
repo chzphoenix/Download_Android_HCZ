@@ -1,5 +1,6 @@
 package com.huichongzi.download_android.download;
 
+import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
@@ -62,13 +63,13 @@ public class DownloadInfo implements Serializable{
     @DatabaseField
     public String str3;
     /** 扩展Serializable字段 **/
-    @DatabaseField
+    @DatabaseField(dataType = DataType.SERIALIZABLE)
     public Serializable obj1;
     /** 扩展Serializable字段 **/
-    @DatabaseField
+    @DatabaseField(dataType = DataType.SERIALIZABLE)
     public Serializable obj2;
     /** 扩展Serializable字段 **/
-    @DatabaseField
+    @DatabaseField(dataType = DataType.SERIALIZABLE)
     public Serializable obj3;
 
 

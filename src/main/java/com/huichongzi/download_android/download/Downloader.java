@@ -19,6 +19,8 @@ public class Downloader {
     Handler downloadHandler = null;
     protected DownloadInfo di;
     private Context context;
+    private StorageHandleTask storageHandleTask;
+    private DownloadTask downloadTask;
     private static final Logger logger = LoggerFactory.getLogger(Downloader.class);
 
 
@@ -38,8 +40,16 @@ public class Downloader {
      * 2、未下载或未下载完开启下载线程
      */
     protected void tryStorage() {
+        if(storageHandleTask != null && storageHandleTask.isAlive()){
+            logger.debug("storageHandleTask has running");
+            return;
+        }
+        if(downloadTask != null && downloadTask.isAlive()){
+            logger.debug("downloadTask has running");
+            return;
+        }
         // 新建存储线程（存储可能需要3-5s，所以以线程方式）
-        StorageHandleTask sh = new StorageHandleTask(di, new StorageListener() {
+        storageHandleTask = new StorageHandleTask(di, new StorageListener() {
             public void onAlreadyDownload(String path) {
                 logger.warn("{} already exists in {}", di.getName(), path);
                 changeState(DownloadOrder.STATE_SUCCESS, 0, null, true, true);
@@ -82,7 +92,7 @@ public class Downloader {
                 changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_CREATE_TMPFILE, msg, true, true);
             }
         });
-        sh.start();
+        storageHandleTask.start();
     }
 
 
@@ -93,7 +103,7 @@ public class Downloader {
      */
     private void startDownload(boolean isNew) {
         // 启动文件下载线程
-        DownloadTask downloadTask = new DownloadTask(context, di, this, isNew);
+        downloadTask = new DownloadTask(context, di, this, isNew);
         downloadTask.start();
     }
 

@@ -17,6 +17,7 @@ public class DownloadManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DownloadManager.class);
     protected static DownServiceListener serviceListener= null;
+    static boolean isDownloadServiceOn;
 
     /**
      * 暂停下载
@@ -267,21 +268,24 @@ public class DownloadManager {
      *
      * @param context
      * @param group 下载组
-     * @param isDowned 是否已下载完
+     * @param type 0为所有，1为已下载完，2为未下载完
      * @throws DownloadDBException
      * @throws IllegalParamsException
      */
-    public static void cancelDownloadForGroup(Context context, String group, boolean isDowned) throws IllegalParamsException, DownloadDBException {
+    public static void cancelDownloadForGroup(Context context, String group, int type) throws IllegalParamsException, DownloadDBException {
         if(context == null){
             throw new IllegalParamsException("context", "must not null");
         }
         if(group == null || group.equals("")){
             throw new IllegalParamsException("group", "must not null");
         }
+        if(type < 0 || type > 2){
+            throw new IllegalParamsException("type", "must 0 - 2");
+        }
         List<DownloadInfo> infos = new ArrayList<DownloadInfo>();
         for(Downloader downloader : DownloadList.downloadMap.values()){
             if(downloader.di.getGroup().equals(group)){
-                if(isDowned == (downloader.di.getState() == DownloadOrder.STATE_SUCCESS)){
+                if(type == 0 || (type == 1) == (downloader.di.getState() == DownloadOrder.STATE_SUCCESS)){
                     if(downloader.di != null){
                         infos.add(downloader.di);
                     }

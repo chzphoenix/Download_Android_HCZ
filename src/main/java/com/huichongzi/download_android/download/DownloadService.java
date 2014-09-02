@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -30,6 +31,13 @@ public class DownloadService extends Service {
     @Override
     public void onDestroy() {
         DownloadReceiver.removeReceiver(this);
+        DownloadManager.isDownloadServiceOn = false;
+        for (Iterator<Downloader> iter = DownloadList.downloadMap.values().iterator(); iter.hasNext(); ) {
+            Downloader down = iter.next();
+            if(down.di.getState() == DownloadOrder.STATE_DOWNING){
+                down.di.setState(DownloadOrder.STATE_WAIT_RECONN);
+            }
+        }
         if(DownloadManager.serviceListener != null){
             DownloadManager.serviceListener.onServiceDestroy(this);
         }
@@ -49,6 +57,7 @@ public class DownloadService extends Service {
         if(DownloadManager.serviceListener != null){
             DownloadManager.serviceListener.onServiceStart(this);
         }
+        DownloadManager.isDownloadServiceOn = true;
         int mode = intent.getIntExtra("mode", 0);
         DownloadList.refresh(this, mode);
         return START_NOT_STICKY;

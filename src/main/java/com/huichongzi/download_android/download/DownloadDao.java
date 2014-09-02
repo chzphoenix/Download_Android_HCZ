@@ -123,7 +123,7 @@ class DownloadDao {
             return list;
         }
         catch (SQLException e){
-            throw new DownloadDBException("failed to get download list from db");
+            throw new DownloadDBException("failed to get download list from db \n", e);
         }finally {
             helper.close();
         }
