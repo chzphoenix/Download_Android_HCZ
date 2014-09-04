@@ -14,6 +14,8 @@ public class DownloadOrder {
     public static final int CHECKMODE_MD5_END = 4;
 
 
+    /** 内部不重连模式  */
+    public static final int RECONNMODE_NO = 0;
     /** 断网重连模式  */
     public static final int RECONNMODE_NET = 32;
     /** sd卡卸载装载重连模式  */
@@ -56,21 +58,10 @@ public class DownloadOrder {
 
 
 
-
-
-
-
-
-
-    protected static final int ACTION_ADD = 1001;
-    protected static final int ACTION_PAUSE = 1002;
-    protected static final int ACTION_RESUME = 1003;
-    protected static final int ACTION_CANCEL = 1004;
-    protected static final int ACTION_PAUSE_IDS = 1005;
-    protected static final int ACTION_RESUME_IDS = 1006;
-    protected static final int ACTION_CANCEL_IDS = 1007;
-    protected static final int ACTION_PAUSE_GROUP = 1008;
-    protected static final int ACTION_RESUME_GROUP = 1009;
-    protected static final int ACTION_CANCEL_GROUP = 1010;
-    protected static final int ACTION_ADD_LIST = 1011;
+    /** 该组所有任务  */
+    public static final int GROUP_ALL = 0;
+    /** 该组已下载完任务  */
+    public static final int GROUP_DOWNLOADED = 1;
+    /** 该组未下载完任务  */
+    public static final int GROUP_DOWNLOADING = 2;
 }

@@ -122,7 +122,7 @@ class DownloadList {
             }
             else if(down.di.isUnlimite() || count < Max_Allow_Download){              //如果不受限直接继续，受限则检查最大下载
                 if(((down.di.getReconnMode() & mode) != 0 && down.di.getState() == DownloadOrder.STATE_WAIT_RECONN)   //内部自动断连情况
-                        || (mode == 0 && down.di.getState() == DownloadOrder.STATE_WAIT_RECONN)){                     //外部情况，先重启所有断连
+                        || (mode == DownloadOrder.RECONNMODE_NO && down.di.getState() == DownloadOrder.STATE_WAIT_RECONN)){                     //外部情况，先重启所有断连
                     down.tryStorage();
                     down.di.setState(DownloadOrder.STATE_DOWNING);
                     if(!down.di.isUnlimite()){

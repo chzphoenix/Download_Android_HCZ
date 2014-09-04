@@ -58,7 +58,7 @@ public class DownloadService extends Service {
             DownloadManager.serviceListener.onServiceStart(this);
         }
         DownloadManager.isDownloadServiceOn = true;
-        int mode = intent.getIntExtra("mode", 0);
+        int mode = intent.getIntExtra("mode", DownloadOrder.RECONNMODE_NO);
         DownloadList.refresh(this, mode);
         return START_NOT_STICKY;
     }
