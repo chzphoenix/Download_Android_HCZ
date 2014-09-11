@@ -374,20 +374,39 @@ public class DownloadManager {
             downloadInfo.checkIllegal();
             //检查列表中是否已存在
             if (DownloadList.has(downloadInfo.getId())) {
-                Message msg = handlers.get(i).obtainMessage(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_ADD_EXIST, 0, downloadInfo.getName());
-                handlers.get(i).handleMessage(msg);
+                if(handlers != null && handlers.size() > i && handlers.get(i) != null) {
+                    Message msg = handlers.get(i).obtainMessage(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_ADD_EXIST, 0, downloadInfo.getName());
+                    handlers.get(i).handleMessage(msg);
+                }
             }
             else{
                 if (downloadInfo.getState() <= DownloadOrder.STATE_DOWNING || downloadInfo.getState() >= DownloadOrder.STATE_SUCCESS) {
                     downloadInfo.setState(DownloadOrder.STATE_WAIT_DOWN);
                 }
-                Downloader down = new Downloader(downloadInfo, handlers.get(i));
+                Downloader down;
+                if(handlers != null && handlers.size() > i && handlers.get(i) != null) {
+                    down = new Downloader(downloadInfo, handlers.get(i));
+                }
+                else{
+                    down = new Downloader(downloadInfo, null);
+                }
                 DownloadList.add(down);
             }
         }
 
         Intent intent = new Intent(context, DownloadService.class);
         context.startService(intent);
+    }
+
+
+    /**
+     * 用于老数据迁移，实际上只是数据库批量保存操作的代理
+     * @param context
+     * @param downloadInfoList   保存的列表
+     * @throws DownloadDBException
+     */
+    public static void saveForMoveData(Context context, List<DownloadInfo> downloadInfoList) throws DownloadDBException {
+        DownloadDao.saveList(context, downloadInfoList);
     }
 
 
