@@ -164,7 +164,6 @@ class DownloadUtils {
         conn.setRequestProperty("Connection", "close");
         conn.setConnectTimeout(5000);
         conn.setReadTimeout(5000);
-        conn.setRequestMethod("GET");
         conn.setDoInput(true);
         conn.connect();
         int downFileCode = conn.getResponseCode();
