@@ -1,11 +1,12 @@
 package com.huichongzi.download_android.download;
 
+import com.huichongzi.download_android.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.channels.FileLock;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 未完成下载的配置文件类
@@ -45,24 +46,6 @@ class UnFinishedConfFile {
 	}
 
 
-    /**
-     * 判断文件是否被使用
-     * @return boolean
-     */
-    protected boolean isLock(){
-		try {
-			RandomAccessFile raf = new RandomAccessFile(file, "rw");
-			FileLock lock = raf.getChannel().tryLock();
-			if(lock.isValid()){
-				return false;
-			}
-			return true;
-		} catch (Exception e) {
-            logger.error("下载配置文件出错: {}", e.getMessage());
-			return true;
-		}
-		
-	}
 
     protected String getValue(String key){
 		return conf.get(key);
@@ -88,13 +71,10 @@ class UnFinishedConfFile {
 		} catch (IOException e) {
             logger.error("下载配置文件出错: {}", e.getMessage());
 		}
-		
 	}
 
     protected void delete(){
-		if(file.exists()){
-			file.delete();
-		}
+        FileUtils.delete(file);
 	}
 
     /**

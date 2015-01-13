@@ -7,11 +7,16 @@ package com.huichongzi.download_android.download;
 interface StorageListener {
 
 	/**
+	 * 当开始准备时调用
+	 */
+	void onStartPre();
+
+	/**
 	 * 当该应用下载存在时触发
 	 * @param path 该应用存储的位置
 	 */
 	void onAlreadyDownload(String path);
-	
+
 	/**
 	 * 当该应用没有下载过触发
 	 * @param path 该应用存储的位置

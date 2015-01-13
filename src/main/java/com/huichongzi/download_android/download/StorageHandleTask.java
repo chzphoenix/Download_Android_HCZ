@@ -1,10 +1,12 @@
 package com.huichongzi.download_android.download;
 
+import com.huichongzi.download_android.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 
 
 /**
@@ -40,15 +42,20 @@ class StorageHandleTask extends Thread {
      */
     @Override
     public void run() {
+        logger.debug("storage download thread start");
+        storageListener.onStartPre();
         // 首先检查是否下载完成
         if (isDownloadExist(di.getPath())) {
+            logger.debug("storage download thread end");
             return;
         }
         // 检查路径并创建文件
         if (!createStorageDir()) {
             // 建立目录失败
+            logger.debug("storage download thread end");
             return;
         }
+        logger.debug("storage download thread end");
     }
 
 
@@ -62,12 +69,13 @@ class StorageHandleTask extends Thread {
         long availableSize = 0;
         long softSize = 0;
 
+
         //通过url获取文件大小，并与传入的downloadinfo中的文件大小比较
         try {
-            softSize = DownloadUtils.getFileSize(di.getUrl());
+            softSize = FileUtils.getFileSizeFromUrl(di.getUrl());
             if ((di.getCheckMode() & DownloadOrder.CHECKMODE_SIZE_START) == 0) {
-                di.setSize(softSize);
-            } else if (softSize != di.getSize() || di.getSize() <= 0) {
+                di.setTotalSize(softSize);
+            } else if (softSize != di.getTotalSize() || di.getTotalSize() <= 0) {
                 storageListener.onFileSizeError();
                 return false;
             }
@@ -89,18 +97,18 @@ class StorageHandleTask extends Thread {
         }
 
 
-        // 判断sd卡是否存在，存储空间是否足够
-        if (DownloadUtils.isSdcardMount()) {
+        // 存储空间是否可用、足够
+        try {
             logger.debug("{} sdcard exist", di.getName());
             File file = new File(di.getPath());
             file.getParentFile().mkdirs();
-            availableSize = DownloadUtils.getAvailableSize(file.getParentFile().getPath());
+            availableSize = FileUtils.getAvailableSize(file.getParentFile().getPath());
             logger.debug("{} sd availaSize= {}, softsize=", di.getName(), availableSize, softSize);
             // 如果sd卡空间足够
             if (availableSize > softSize + miniSdSize) {
                 // 正常下载
                 try {
-                    DownloadUtils.createTmpFile(di);
+                    StorageHandleTask.createTmpFile(di);
                 } catch (IOException e) {
                     storageListener.onCreateFailed(e.getMessage());
                     return false;
@@ -109,11 +117,14 @@ class StorageHandleTask extends Thread {
             } else {
                 storageListener.onStorageNotEnough(softSize, availableSize);
             }
-        } else {
-            storageListener.onStorageNotMount(di.getPath());
+        }
+        catch (Exception e) {
+            logger.error("", e);
+            if (e.getMessage() != null && e.getMessage().contains("Invalid path")) {
+                storageListener.onStorageNotMount(di.getPath());
+            }
         }
         return true;
-
     }
 
 
@@ -134,6 +145,45 @@ class StorageHandleTask extends Thread {
         } else {
             return false;
         }
+    }
+
+
+
+    /**
+     * 创建下载临时文件
+     * @param di 下载文件信息
+     * @return
+     */
+    protected static void createTmpFile(DownloadInfo di) throws IOException {
+        File file = new File(di.getPath() + StorageHandleTask.Unfinished_Sign);
+        // 创建下载目录
+        if (!file.exists()) {
+            file.getParentFile().mkdirs();
+        }
+        RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
+        randomAccessFile.seek(di.getTotalSize() - 1);
+        randomAccessFile.write(0);
+        randomAccessFile.close();
+    }
+
+
+    /**
+     * 删除文件。包括临时文件和配置文件
+     * 用于下载出错，下载取消等
+     * @param path
+     */
+    protected static void removeFile(String path) {
+        File file = new File(path);
+        File tempFile = new File(path + StorageHandleTask.Unfinished_Sign);
+        // 下载完成
+        if (file.exists()) {
+            file.delete();
+        }
+        // 下载但没有完成
+        if (tempFile.exists()) {
+            tempFile.delete();
+        }
+        new UnFinishedConfFile(file.getAbsolutePath()).delete();
     }
 
 

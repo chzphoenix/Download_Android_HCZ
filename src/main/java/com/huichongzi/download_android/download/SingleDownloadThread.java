@@ -1,18 +1,14 @@
 package com.huichongzi.download_android.download;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.InputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import android.content.Context;
+import com.huichongzi.download_android.utils.NetUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-
-import android.content.Context;
-import android.os.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -35,7 +31,7 @@ class SingleDownloadThread extends Thread {
     private static final int CONN_TIMEOUT = 1000 * 40;
     private static final int READ_TIMEOUT = 1000 * 60;
     // 下载中停止一段时间，以防过于耗费资源
-    private static final int SLEEP_TIME = 50;
+    private static final int SLEEP_TIME = 20;
     private Context context;
 
 
@@ -54,13 +50,14 @@ class SingleDownloadThread extends Thread {
 
     @Override
     public void run() {
+        logger.debug("single download thread start");
         BufferedInputStream bis = null;
         RandomAccessFile fos = null;
         byte[] buf = new byte[BUFFER_SIZE];
         HttpURLConnection con = null;
         try {
             URL url = new URL(di.getUrl());
-            con = (HttpURLConnection) url.openConnection();
+            con = (HttpURLConnection)url.openConnection();
             con.setConnectTimeout(CONN_TIMEOUT);
             con.setReadTimeout(READ_TIMEOUT);
             con.setAllowUserInteraction(true);
@@ -106,8 +103,9 @@ class SingleDownloadThread extends Thread {
             logger.error("{} thread {} -> download SocketTimeoutException:{}", di.getName(), threadId, e.getMessage());
             downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true, true);
         } catch (IOException e) {
-            if(context != null && (!DownloadUtils.isNetAlive(context) || !DownloadUtils.isSdcardMount())){
-                downloader.changeState(DownloadOrder.STATE_WAIT_RECONN, 0, null, false, true);
+            if(context != null && !NetUtils.isNetAvailable(context)){
+                //业务层处理
+                //downloader.changeState(DownloadOrder.STATE_WAIT_DOWN, 0, null, false, true);
             }
             else{
                 logger.error("{} thread {} -> download IOException:{}", di.getName(), threadId, e.getMessage());
@@ -116,6 +114,9 @@ class SingleDownloadThread extends Thread {
         } catch (Exception e) {
             logger.error("{} thread {} -> download error:{}", di.getName(), threadId, e.getMessage());
             downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true, true);
+        }
+        finally {
+            logger.debug("single download thread end");
         }
     }
 

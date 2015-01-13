@@ -39,10 +39,11 @@ class DownloadDBHelper extends OrmLiteSqliteOpenHelper {
      * call to {@link #close()}.
      */
     public static synchronized DownloadDBHelper getHelper(Context context) {
+        int i = usageCounter.incrementAndGet();
+        logger.debug("download.db 增加一个数据库连接，目前连接数：{}", i);
         if (helper == null) {
             helper = new DownloadDBHelper(context);
         }
-        usageCounter.incrementAndGet();
         return helper;
     }
 
@@ -100,7 +101,9 @@ class DownloadDBHelper extends OrmLiteSqliteOpenHelper {
      */
     @Override
     public void close() {
-        if (usageCounter.decrementAndGet() == 0) {
+        int i = usageCounter.decrementAndGet();
+        logger.debug("download.db 减少一个数据库连接，目前连接数：{}", i);
+        if (i == 0) {
             super.close();
             downloadDao = null;
             helper = null;

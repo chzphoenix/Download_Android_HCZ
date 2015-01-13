@@ -14,29 +14,19 @@ public class DownloadOrder {
     public static final int CHECKMODE_MD5_END = 4;
 
 
-    /** 内部不重连模式  */
-    public static final int RECONNMODE_NO = 0;
-    /** 断网重连模式  */
-    public static final int RECONNMODE_NET = 32;
-    /** sd卡卸载装载重连模式  */
-    public static final int RECONNMODE_SDCARD = 64;
-
-
 
     /** 正在下载  */
     public static final int STATE_DOWNING = 100;
-    /** 等待下载状态，下载数已到上限。当下载文件数小于限制数，将按顺序自动下载等待状态的文件  */
+    /** 等待下载状态  */
     public static final int STATE_WAIT_DOWN = 101;
-    /** 等待重连状态，断网或sd卡卸载。  */
-    public static final int STATE_WAIT_RECONN = 102;
     /** 暂停状态，用户进行暂停操作后的状态，不能自动下载，必须等用户手动恢复下载 */
-    public static final int STATE_PAUSE = 103;
+    public static final int STATE_PAUSE = 102;
     /** 下载成功  */
-    public static final int STATE_SUCCESS = 104;
+    public static final int STATE_SUCCESS = 103;
     /** 下载失败。包括下载完成后校验失败，校验失败时会删除相关文件。  */
-    public static final int STATE_FAILED = 105;
+    public static final int STATE_FAILED = 104;
     /** 停止状态，用户取消下载，此状态一般不会出现，用于异常情况  */
-    public static final int STATE_STOP = 106;
+    public static final int STATE_STOP = 105;
 
 
     /** 空间不足  */
@@ -57,11 +47,11 @@ public class DownloadOrder {
     public static final int FAILED_ADD_EXIST = 10008;
 
 
+    /** 最小优先级  */
+    public static final int PRIORITY_MIN = 0;
+    /** 中断保持状态时下载中的优先级  */
+    public static final int PRIORITY_DOWNING = 100;
+    /** 最大优先级  */
+    public static final int PRIORITY_MAX = 1000;
 
-    /** 该组所有任务  */
-    public static final int GROUP_ALL = 0;
-    /** 该组已下载完任务  */
-    public static final int GROUP_DOWNLOADED = 1;
-    /** 该组未下载完任务  */
-    public static final int GROUP_DOWNLOADING = 2;
 }

@@ -1,4 +1,4 @@
-package com.huichongzi.download_android.download;
+package com.huichongzi.download_android.exception;
 
 /**
  * 下载任务不存在异常

@@ -1,4 +1,4 @@
-package com.huichongzi.download_android.download;
+package com.huichongzi.download_android.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

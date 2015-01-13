@@ -1,12 +1,12 @@
 package com.huichongzi.download_android.download;
 
-import java.io.File;
-import java.io.IOException;
-
 import android.content.Context;
+import com.huichongzi.download_android.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
 
@@ -18,6 +18,8 @@ import java.security.NoSuchAlgorithmException;
  */
 class DownloadTask extends Thread {
     private static final Logger logger = LoggerFactory.getLogger(DownloadTask.class);
+    /** 用于判断文件使用几个线程下载 **/
+    private static final int BASE_SIZE = 4 * 1024 * 1024;
     private long fileSize = 0;
     // 每一个线程分担的下载量
     private long blockSize;
@@ -51,6 +53,10 @@ class DownloadTask extends Thread {
 
     @Override
     public void run() {
+        logger.debug("download thread start");
+        if(di.getState() != DownloadOrder.STATE_DOWNING){
+            return;
+        }
         tmpPath = di.getPath() + StorageHandleTask.Unfinished_Sign;
         //初始化下载状态文件
         unFinishConf = new UnFinishedConfFile(di.getPath());
@@ -60,23 +66,27 @@ class DownloadTask extends Thread {
             isDownMidle = true;
         }
         if(threadNum <= 0){
-            //TODO 根据硬件设置线程数
-            threadNum = 3;
+            threadNum = (int)(di.getTotalSize() / BASE_SIZE);
+            if(threadNum > 5){
+                threadNum = 5;
+            }
+            if(threadNum <= 0){
+                threadNum = 1;
+            }
         }
         logger.info("build DownloadTask url={}, ,tmpPath={}", di.getUrl(), tmpPath);
         SingleDownloadThread[] fds = new SingleDownloadThread[threadNum];
         //记录下载线程数，以便断点续传时能使用正确的线程数下载
         unFinishConf.put("threadNum", threadNum + "");
         try {
-            fileSize = di.getSize();
+            fileSize = di.getTotalSize();
             File file = new File(tmpPath);
-            downloader.changeState(DownloadOrder.STATE_DOWNING, di.getProgress(), null, false, true);
 
             //如果是断点续传，首先判断记录的大小与下载信息中大小是否一致，不一致则删除重下
             if (isDownMidle && fileSize != Integer.parseInt(unFinishConf.getValue("fileSize"))) {
                 logger.warn("{} 断点记载文件大小与给定的大小不符，重新下载", di.getName());
-                DownloadUtils.removeFile(di.getPath());
-                DownloadUtils.createTmpFile(di);
+                StorageHandleTask.removeFile(di.getPath());
+                StorageHandleTask.createTmpFile(di);
                 unFinishConf = new UnFinishedConfFile(di.getPath());
                 unFinishConf.put("threadNum", threadNum + "");
                 isDownMidle = false;
@@ -130,27 +140,23 @@ class DownloadTask extends Thread {
                     downloadOver();
                     continue;
                 }
-                di.setProgress(progress);
-                di.setSpeed(downloadedSize - this.downloadedSize);
                 this.downloadedSize = downloadedSize;
-                downloader.changeState(DownloadOrder.STATE_DOWNING, progress, null, false, false);
 
+                //记录已下载大小，将记录的下载信息保持至文件。更新数据库
+                unFinishConf.put("downloadedSize", downloadedSize + alreadyDownloadSize + "");
+                unFinishConf.write();
 
-                //每隔5秒，记录已下载大小，将记录的下载信息保持至文件。更新数据库
-                saveCount++;
-                if (saveCount % 5 == 0) {
-                    unFinishConf.put("downloadedSize", downloadedSize + alreadyDownloadSize + "");
-                    unFinishConf.write();
-                    DownloadDao.saveIgnoreException(context, di);
-                    saveCount = 0;
-                }
-                // 休息1秒后再读取下载进度
-                sleep(1000);
+                downloader.changeState(DownloadOrder.STATE_DOWNING, progress, null, false, true);
+                // 休息后再读取下载进度
+                sleep(500);
             }
         } catch (Exception e) {
             downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_DOWNLOADING, e.getMessage(), true, true);
+            logger.error(e.toString(), e);
         }
-
+        finally {
+            logger.debug("download thread end");
+        }
     }
 
 
@@ -162,14 +168,15 @@ class DownloadTask extends Thread {
         File downloadFile = new File(tmpPath);
         //验证md5
         if ((di.getCheckMode() & DownloadOrder.CHECKMODE_MD5_END) != 0 && !checkMd5(downloadFile)) {
-            DownloadUtils.removeFile(di.getPath());
+            StorageHandleTask.removeFile(di.getPath());
             downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_MD5_ERROR, "已下载文件md5校验失败", true, true);
             return;
         }
         //验证大小
-        if ((di.getCheckMode() & DownloadOrder.CHECKMODE_SIZE_END) != 0 && downloadFile.length() != di.getSize()) {
-            DownloadUtils.removeFile(di.getPath());
-            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SIZE_ERROR, "已下载文件大小校验失败", true, true);
+        if ((di.getCheckMode() & DownloadOrder.CHECKMODE_SIZE_END) != 0 && downloadFile.length() != di.getTotalSize()) {
+            long fileSize = downloadFile.length();
+            StorageHandleTask.removeFile(di.getPath());
+            downloader.changeState(DownloadOrder.STATE_FAILED, DownloadOrder.FAILED_SIZE_ERROR, di.getTotalSize() + ":" + fileSize, true, true);
             return;
         }
         if (tmpPath.endsWith(StorageHandleTask.Unfinished_Sign)) {
@@ -179,7 +186,6 @@ class DownloadTask extends Thread {
             // 更改文件名
             downloadFile.renameTo(toFile);
         }
-        di.setDownloadTime(System.currentTimeMillis());
         downloader.changeState(DownloadOrder.STATE_SUCCESS, 0, null, true, true);
     }
 
@@ -194,7 +200,7 @@ class DownloadTask extends Thread {
         if (di.getMd5() != null) {
             // md5验证失败后不走下载流程
             try {
-                if (!di.getMd5().equalsIgnoreCase(DownloadUtils.getFileMD5(file))) {
+                if (!di.getMd5().equalsIgnoreCase(FileUtils.getFileMD5(file))) {
                     return false;
                 } else {
                     return true;
